@@ -1,0 +1,37 @@
+{% extends 'base.html' %}{% block title %}{{ title }}{% endblock %}
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main"><div class="topbar"><div class="d-flex align-items-center gap-3"><button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button><h5>{{ title }}</h5></div><a href="{% url 'product_list' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-left me-1"></i>Back</a></div>
+<div class="page-body"><div class="row justify-content-center"><div class="col-md-6 col-lg-5"><div class="card p-4">
+<form method="post">{% csrf_token %}
+<div class="mb-3">
+  <label class="form-label">Design Name *</label>
+  <input class="form-control" name="design_name" value="{{ obj.design_name|default:'' }}" required>
+</div>
+<div class="mb-3">
+  <label class="form-label">Manufacturing Price (₹) *</label>
+  <input class="form-control" type="number" step="0.01" name="manufacturing_price" value="{{ obj.manufacturing_price|default:'' }}" required>
+</div>
+<div class="mb-3">
+  <label class="form-label">Billing Price (₹) *</label>
+  <input class="form-control" type="number" step="0.01" name="billing_price" value="{{ obj.billing_price|default:'' }}" required>
+</div>
+<div class="mb-3">
+  <label class="form-label">Challan Price (₹) *</label>
+  <input class="form-control" type="number" step="0.01" name="challan_price" value="{{ obj.challan_price|default:'' }}" required>
+</div>
+
+<!-- GST field -->
+<div class="mb-4">
+  <label class="form-label">GST %
+    <span style="font-size:11px;color:#6b7280;font-weight:400">(Enter 0 for no GST)</span>
+  </label>
+  <div class="input-group">
+    <input class="form-control" type="number" step="0.01" min="0" max="100"
+           name="gst_percent" value="{{ obj.gst_percent|default:'0' }}" placeholder="0">
+    <span class="input-group-text" style="border-radius:0 10px 10px 0">%</span>
+  </div>
+  <div style="font-size:11px;color:#6b7280;margin-top:4px">Common: 5% | 12% | 18% | 28%</div>
+</div>
+
+<button type="submit" class="btn btn-primary w-100">Save Product</button>
+</form></div></div></div></div></div></div>{% endblock %}

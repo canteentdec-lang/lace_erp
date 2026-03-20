@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% block title %}Machines{% endblock %}
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main"><div class="topbar"><div class="d-flex align-items-center gap-3"><button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button><h5>Machines</h5></div><a href="{% url 'machine_add' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Add</a></div>
+<div class="page-body"><div class="card"><div class="table-responsive"><table class="table">
+<thead><tr><th>Machine No.</th><th>Category</th><th>Designs</th><th>Actions</th></tr></thead>
+<tbody>{% for m in machines %}
+<tr><td data-label="Machine No."><strong>{{ m.machine_number }}</strong></td>
+<td data-label="Category"><span class="badge badge-purple">{{ m.get_category_display }}</span></td>
+<td data-label="Designs">{{ m.designs.count }}</td>
+<td data-label="Actions">
+<a href="{% url 'machine_edit' m.pk %}" class="btn btn-sm btn-outline-primary btn-icon me-1"><i class="bi bi-pencil"></i></a>
+<a href="{% url 'machine_delete' m.pk %}" class="btn btn-sm btn-outline-danger btn-icon"><i class="bi bi-trash"></i></a>
+</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-muted py-4">No machines</td></tr>{% endfor %}
+</tbody></table></div></div></div></div></div>{% endblock %}

@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% block title %}Designs{% endblock %}
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main"><div class="topbar"><div class="d-flex align-items-center gap-3"><button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button><h5>Designs</h5></div><a href="{% url 'design_add' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Add</a></div>
+<div class="page-body"><div class="card"><div class="table-responsive"><table class="table">
+<thead><tr><th>Design Name</th><th>Machine</th><th>Patti Count</th><th>Actions</th></tr></thead>
+<tbody>{% for d in designs %}
+<tr><td data-label="Design Name"><strong>{{ d.design_name }}</strong></td>
+<td data-label="Machine">Machine {{ d.machine.machine_number }}</td>
+<td data-label="Patti Count"><span class="badge badge-purple">{{ d.patti_count }}</span></td>
+<td data-label="Actions">
+<a href="{% url 'design_edit' d.pk %}" class="btn btn-sm btn-outline-primary btn-icon me-1"><i class="bi bi-pencil"></i></a>
+<a href="{% url 'design_delete' d.pk %}" class="btn btn-sm btn-outline-danger btn-icon"><i class="bi bi-trash"></i></a>
+</td></tr>{% empty %}<tr><td colspan="4" class="text-center text-muted py-4">No designs</td></tr>{% endfor %}
+</tbody></table></div></div></div></div></div>{% endblock %}

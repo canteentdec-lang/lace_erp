@@ -1,0 +1,18 @@
+{% extends 'base.html' %}{% block title %}Employees{% endblock %}
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main"><div class="topbar"><div class="d-flex align-items-center gap-3"><button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button><h5>Employees</h5></div><a href="{% url 'emp_add' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Add</a></div>
+<div class="page-body"><div class="card"><div class="table-responsive"><table class="table">
+<thead><tr><th>Name</th><th>User ID</th><th>Machine</th><th>₹/Hour</th><th>Status</th><th>Actions</th></tr></thead>
+<tbody>{% for e in emps %}
+<tr>
+<td data-label="Name"><strong>{{ e.name }}</strong></td>
+<td data-label="User ID"><code>{{ e.user_id }}</code></td>
+<td data-label="Machine">{% if e.machine %}M{{ e.machine.machine_number }}{% else %}—{% endif %}</td>
+<td data-label="Rate">₹{{ e.salary_per_hour }}</td>
+<td data-label="Status">{% if e.is_active %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-red">Inactive</span>{% endif %}</td>
+<td data-label="Actions">
+<a href="{% url 'emp_edit' e.pk %}" class="btn btn-sm btn-outline-primary btn-icon me-1"><i class="bi bi-pencil"></i></a>
+<a href="{% url 'emp_delete' e.pk %}" class="btn btn-sm btn-outline-danger btn-icon"><i class="bi bi-trash"></i></a>
+</td></tr>
+{% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No employees</td></tr>{% endfor %}
+</tbody></table></div></div></div></div></div>{% endblock %}

@@ -1,0 +1,11 @@
+{% extends 'base.html' %}{% block title %}{{ title }}{% endblock %}
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main"><div class="topbar"><div class="d-flex align-items-center gap-3"><button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button><h5>{{ title }}</h5></div><a href="{% url 'party_list' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-left me-1"></i>Back</a></div>
+<div class="page-body"><div class="row justify-content-center"><div class="col-md-6 col-lg-4"><div class="card p-4">
+<form method="post">{% csrf_token %}
+<div class="mb-3"><label class="form-label">Party Name *</label><input class="form-control" name="name" value="{{ obj.name|default:'' }}" required></div>
+<div class="mb-3"><label class="form-label">GST Number</label><input class="form-control" name="gst_number" value="{{ obj.gst_number|default:'' }}" placeholder="27AAPFU0939F1Z5"></div>
+<div class="mb-3"><label class="form-label">Phone</label><input class="form-control" name="phone" value="{{ obj.phone|default:'' }}"></div>
+<div class="mb-4"><label class="form-label">Address</label><textarea class="form-control" name="address" rows="2">{{ obj.address|default:'' }}</textarea></div>
+<button type="submit" class="btn btn-primary w-100">Save Party</button>
+</form></div></div></div></div></div></div>{% endblock %}

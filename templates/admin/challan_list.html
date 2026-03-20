@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}Challans{% endblock %}
+{% block body %}
+<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main">
+<div class="topbar">
+  <div class="d-flex align-items-center gap-3">
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+    <h5>Challans</h5>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{% url 'challan_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Create</a>
+    <a href="?from_date={{ from_date }}&to_date={{ to_date }}&party={{ sel_party }}&download=csv"
+       class="btn btn-outline-success btn-sm"><i class="bi bi-download me-1"></i>Download CSV</a>
+  </div>
+</div>
+
+<div class="page-body">
+
+  <!-- Filter card -->
+  <div class="card p-3 mb-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-6 col-sm-3">
+        <label class="form-label">From Date</label>
+        <input type="date" class="form-control" name="from_date" value="{{ from_date }}">
+      </div>
+      <div class="col-6 col-sm-3">
+        <label class="form-label">To Date</label>
+        <input type="date" class="form-control" name="to_date" value="{{ to_date }}">
+      </div>
+      <div class="col-12 col-sm-3">
+        <label class="form-label">Party</label>
+        <select class="form-select" name="party">
+          <option value="">All Parties</option>
+          {% for p in parties %}
+          <option value="{{ p.pk }}" {% if sel_party == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-sm-2">
+        <button type="submit" class="btn btn-primary w-100">Filter</button>
+      </div>
+      <div class="col-6 col-sm-1">
+        <a href="{% url 'challan_list' %}" class="btn btn-outline-secondary w-100" title="Clear filters">
+          <i class="bi bi-x-lg"></i>
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Summary stat -->
+  {% if challans %}
+  <div class="d-flex gap-3 mb-3 flex-wrap">
+    <div style="background:#fff;border-radius:12px;padding:12px 20px;box-shadow:0 2px 10px rgba(108,99,255,.1);display:flex;align-items:center;gap:10px">
+      <div style="background:#d1fae5;color:#065f46;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">
+        <i class="bi bi-truck"></i>
+      </div>
+      <div>
+        <div style="font-size:18px;font-weight:700;color:#065f46">₹{{ total_amount|floatformat:0 }}</div>
+        <div style="font-size:11px;color:#6b7280">Total ({{ challans|length }} challans)</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Table -->
+  <div class="card">
+    <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Challan No.</th>
+          <th>Party</th>
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Linked Bill</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for ch in challans %}
+      <tr>
+        <td data-label="Challan No."><strong>#{{ ch.challan_number }}</strong></td>
+        <td data-label="Party">{{ ch.party.name|default:"—" }}</td>
+        <td data-label="Date">{{ ch.date|date:"d M Y" }}</td>
+        <td data-label="Amount"><strong>₹{{ ch.total_amount }}</strong></td>
+        <td data-label="Linked Bill">
+          {% if ch.bill %}
+          <a href="{% url 'bill_detail' ch.bill.pk %}" class="badge badge-purple" style="text-decoration:none">
+            Bill #{{ ch.bill.bill_number }}
+          </a>
+          {% else %}
+          <span class="badge badge-green">Manual</span>
+          {% endif %}
+        </td>
+        <td data-label="Actions">
+          {% if ch.pk %}
+          <a href="{% url 'challan_detail' ch.pk %}" class="btn btn-sm btn-outline-primary btn-icon me-1"><i class="bi bi-eye"></i></a>
+          <a href="{% url 'challan_edit' ch.pk %}" class="btn btn-sm btn-outline-secondary btn-icon me-1"><i class="bi bi-pencil"></i></a>
+          <a href="{% url 'challan_delete' ch.pk %}" class="btn btn-sm btn-outline-danger btn-icon"><i class="bi bi-trash"></i></a>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center text-muted py-4">
+        <i class="bi bi-truck" style="font-size:32px;display:block;margin-bottom:8px;opacity:.3"></i>
+        No challans found for this filter
+      </td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+</div>
+</div>
+</div>
+{% endblock %}

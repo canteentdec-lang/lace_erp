@@ -1,0 +1,13 @@
+{% extends 'base.html' %}{% block title %}{{ title }}{% endblock %}
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main"><div class="topbar"><div class="d-flex align-items-center gap-3"><button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button><h5>{{ title }}</h5></div><a href="{% url 'machine_list' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-left me-1"></i>Back</a></div>
+<div class="page-body"><div class="row justify-content-center"><div class="col-md-6 col-lg-4"><div class="card p-4">
+<form method="post">{% csrf_token %}
+<div class="mb-3"><label class="form-label">Machine Number *</label><input class="form-control" name="machine_number" value="{{ obj.machine_number|default:'' }}" required></div>
+<div class="mb-4"><label class="form-label">Category *</label>
+<select class="form-select" name="category">
+<option value="high_speed" {% if obj and obj.category == 'high_speed' %}selected{% endif %}>High Speed</option>
+<option value="krochek" {% if obj and obj.category == 'krochek' %}selected{% endif %}>Krochek</option>
+</select></div>
+<button type="submit" class="btn btn-primary w-100">Save Machine</button>
+</form></div></div></div></div></div></div>{% endblock %}

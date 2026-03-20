@@ -1,0 +1,437 @@
+{% extends 'base.html' %}{% block title %}{{ title }}{% endblock %}
+{% block head %}
+<style>
+/* Bill number field with edit/lock */
+.bill-num-wrap{position:relative}
+.bill-num-wrap input{padding-right:90px;font-weight:700;font-size:15px;color:#1e1b4b;background:#f0fdf4;border-color:#10b981}
+.bill-num-wrap input.editable{background:#fff;border-color:#6C63FF;color:#1e1b4b}
+.bill-num-actions{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:6px}
+.num-edit-btn{background:#ede9ff;border:none;color:#6C63FF;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.num-save-btn{background:#d1fae5;border:none;color:#065f46;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;display:none}
+.num-cancel-btn{background:#fee2e2;border:none;color:#991b1b;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;display:none}
+
+/* Confirm modal */
+.confirm-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;align-items:center;justify-content:center;padding:16px}
+.confirm-backdrop.show{display:flex}
+.confirm-box{background:#fff;border-radius:18px;padding:28px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
+.confirm-box h5{font-weight:700;font-size:18px;margin-bottom:8px}
+.confirm-box p{color:#6b7280;font-size:14px;margin-bottom:20px}
+.confirm-old{font-size:22px;font-weight:700;color:#ef4444;text-decoration:line-through;margin-bottom:4px}
+.confirm-new{font-size:28px;font-weight:800;color:#10b981}
+.confirm-arrow{font-size:20px;color:#6b7280;margin:4px 0}
+
+/* GST section */
+.gst-section{background:#f0fdf4;border:1.5px solid #10b981;border-radius:12px;padding:16px;margin-bottom:20px}
+.toggle-row{display:flex;align-items:center;gap:12px;cursor:pointer}
+.toggle-row input[type=checkbox]{width:20px;height:20px;accent-color:#10b981;cursor:pointer;flex-shrink:0}
+.toggle-row label{font-weight:600;font-size:14px;color:#065f46;cursor:pointer;margin:0;flex:1}
+.gst-sub{margin-top:12px;padding-top:12px;border-top:1px solid #a7f3d0;display:none}
+.gst-sub.show{display:block}
+.gst-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.igst-row{display:flex;align-items:center;gap:10px;font-size:13px;color:#065f46;margin-top:8px}
+
+/* Items table */
+.items-table th{font-size:11px;background:#f8f9ff;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;padding:10px 8px;white-space:nowrap}
+.items-table td{padding:6px 8px;vertical-align:middle}
+.items-table .form-control,.items-table .form-select{padding:7px 9px;font-size:13px;border-radius:8px}
+
+/* Totals */
+.total-box{background:linear-gradient(135deg,#ede9ff,#f4f0ff);border-radius:14px;padding:18px}
+.t-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px solid rgba(108,99,255,.1)}
+.t-row.grand{border-top:2px solid rgba(108,99,255,.25);border-bottom:none;margin-top:6px;padding-top:10px}
+.t-row.grand span:first-child{font-size:15px;font-weight:700}
+.t-row.grand span:last-child{font-size:20px;font-weight:800;color:#6C63FF}
+.t-row .gst-clr{color:#10b981;font-weight:600}
+
+@media(max-width:768px){
+  .items-table thead{display:none}
+  .items-table tbody tr{display:block;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:10px;padding:4px 0}
+  .items-table tbody td{display:block;border-bottom:1px solid #f0f0f0;padding:8px 12px}
+  .items-table tbody td::before{content:attr(data-label);font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
+  .items-table tbody td:last-child{border-bottom:none}
+  .bill-num-actions{position:static;transform:none;margin-top:8px;display:flex}
+  .bill-num-wrap input{padding-right:14px}
+}
+</style>
+{% endblock %}
+
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main"><div class="topbar">
+  <div class="d-flex align-items-center gap-3">
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+    <h5>{{ title }}</h5>
+  </div>
+  <a href="{% url 'bill_list' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+<div class="page-body">
+
+{% if not obj %}
+<div class="alert" style="background:#d1fae5;border:none;border-radius:12px;color:#065f46;font-size:13px;padding:12px 16px;margin-bottom:16px">
+  <i class="bi bi-magic me-1"></i>
+  Invoice number <strong>#{{ next_bill_number }}</strong> has been auto-generated. You can edit it if needed.
+</div>
+{% endif %}
+
+<form method="post" id="billForm">{% csrf_token %}
+
+<!-- Bill Header -->
+<div class="card p-4 mb-3">
+  <div class="row g-3">
+
+    <!-- AUTO BILL NUMBER -->
+    <div class="col-sm-4">
+      <label class="form-label">
+        Invoice Number
+        {% if not obj %}
+        <span class="badge" style="background:#d1fae5;color:#065f46;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;margin-left:4px">AUTO</span>
+        {% endif %}
+      </label>
+      <div class="bill-num-wrap">
+        <input class="form-control" type="text"
+               name="bill_number"
+               id="billNumInput"
+               value="{% if obj %}{{ obj.bill_number }}{% else %}{{ next_bill_number }}{% endif %}"
+               readonly
+               required>
+        <div class="bill-num-actions" id="billNumActions">
+          <button type="button" class="num-edit-btn" id="editBtn" onclick="startEdit()">
+            <i class="bi bi-pencil me-1"></i>Edit
+          </button>
+          <button type="button" class="num-save-btn" id="saveBtn" onclick="confirmChange()">
+            <i class="bi bi-check me-1"></i>Change
+          </button>
+          <button type="button" class="num-cancel-btn" id="cancelBtn" onclick="cancelEdit()">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#6b7280;margin-top:4px">
+        {% if not obj %}Auto-incremented from last bill{% else %}Click Edit to change number{% endif %}
+      </div>
+    </div>
+
+    <div class="col-sm-4">
+      <label class="form-label">Party *</label>
+      <select class="form-select" name="party" required>
+        <option value="">-- Select Party --</option>
+        {% for p in parties %}<option value="{{ p.pk }}" {% if obj and obj.party and obj.party.pk == p.pk %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-sm-4">
+      <label class="form-label">Date *</label>
+      <input class="form-control" type="date" name="date"
+value="{{ obj.date|default:today|date:'Y-m-d' }}" required>
+    </div>
+  </div>
+</div>
+
+<!-- GST Section -->
+<div class="gst-section">
+  <div class="toggle-row" onclick="toggleGst()">
+    <input type="checkbox" name="apply_gst" id="gstChk"
+           {% if obj and obj.apply_gst %}checked{% endif %}
+           onclick="event.stopPropagation();toggleGst()">
+    <label for="gstChk">Apply GST on this Bill</label>
+    <span id="gstBadge" class="gst-badge"
+          style="background:{% if obj and obj.apply_gst %}#d1fae5;color:#065f46{% else %}#f3f4f6;color:#6b7280{% endif %}">
+      {% if obj and obj.apply_gst %}GST ON{% else %}GST OFF{% endif %}
+    </span>
+  </div>
+  <div class="gst-sub {% if obj and obj.apply_gst %}show{% endif %}" id="gstSub">
+    <div class="igst-row">
+      <input type="checkbox" name="is_igst" id="igstChk"
+             {% if obj and obj.is_igst %}checked{% endif %} onchange="recalcAll()">
+      <label for="igstChk" style="cursor:pointer">
+        <strong>Inter-State (IGST)</strong> — uncheck for Intra-State (SGST + CGST)
+      </label>
+    </div>
+    <div style="font-size:11px;color:#6b7280;margin-top:6px;margin-left:26px">
+      GST % is set per product in Products section
+    </div>
+  </div>
+</div>
+
+<!-- Items Table -->
+<div class="card p-4 mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div style="font-weight:700;font-size:15px">Bill Items</div>
+    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRow()">
+      <i class="bi bi-plus-lg me-1"></i>Add Item
+    </button>
+  </div>
+  <div class="table-responsive">
+  <table class="table items-table">
+    <thead>
+      <tr>
+        <th>Product</th><th style="width:55px">HSN</th><th style="width:52px">Unit</th>
+        <th>Price (₹)</th><th>Qty</th>
+        <th style="width:52px">GST%</th><th>GST Amt</th><th>Total</th><th></th>
+      </tr>
+    </thead>
+    <tbody id="tbody">
+    {% if obj and obj.items.all %}
+      {% for item in obj.items.all %}
+      <tr class="item-row">
+        <td data-label="Product">
+          <select name="product_id[]" class="form-select prod-sel" onchange="fillPrice(this)">
+            <option value="">-- Select --</option>
+            {% for p in products %}<option value="{{ p.pk }}" data-bp="{{ p.billing_price }}" data-gst="{{ p.gst_percent }}" data-hsn="{{ p.hsn_code }}" data-unit="{{ p.unit }}" {% if p.pk == item.product.pk %}selected{% endif %}>{{ p.design_name }}</option>{% endfor %}
+          </select>
+        </td>
+        <td data-label="HSN"><input class="form-control hsn-f" type="text" readonly value="{{ item.hsn_code }}" style="background:#f8f9ff;width:60px"></td>
+        <td data-label="Unit"><input class="form-control unit-f" type="text" readonly value="{{ item.unit }}" style="background:#f8f9ff;width:55px"></td>
+        <td data-label="Price"><input class="form-control price-f" type="number" step="0.01" name="price[]" value="{{ item.price }}" oninput="calcRow(this)"></td>
+        <td data-label="Qty"><input class="form-control qty-f" type="number" name="quantity[]" step="0.01" min="0.01" value="{{ item.quantity }}" oninput="calcRow(this)" required></td>
+        <td data-label="GST%"><input class="form-control gst-pct-f" type="number" readonly value="{{ item.gst_percent }}" style="background:#f8f9ff"></td>
+        <td data-label="GST Amt"><input class="form-control gst-amt-f" type="text" readonly value="{{ item.gst_amount }}" style="background:#f8f9ff"></td>
+        <td data-label="Total"><input class="form-control row-total" type="text" readonly value="{{ item.total }}" style="background:#f8f9ff"></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger btn-icon" onclick="rmRow(this)"><i class="bi bi-trash"></i></button></td>
+      </tr>
+      {% endfor %}
+    {% else %}
+      <tr class="item-row">
+        <td data-label="Product">
+          <select name="product_id[]" class="form-select prod-sel" onchange="fillPrice(this)">
+            <option value="">-- Select --</option>
+            {% for p in products %}<option value="{{ p.pk }}" data-bp="{{ p.billing_price }}" data-gst="{{ p.gst_percent }}" data-hsn="{{ p.hsn_code }}" data-unit="{{ p.unit }}">{{ p.design_name }}</option>{% endfor %}
+          </select>
+        </td>
+        <td data-label="HSN"><input class="form-control hsn-f" type="text" readonly placeholder="—" style="background:#f8f9ff;width:60px"></td>
+        <td data-label="Unit"><input class="form-control unit-f" type="text" readonly placeholder="—" style="background:#f8f9ff;width:55px"></td>
+        <td data-label="Price"><input class="form-control price-f" type="number" step="0.01" name="price[]" placeholder="0.00" oninput="calcRow(this)"></td>
+        <td data-label="Qty"><input class="form-control qty-f" type="number" name="quantity[]" step="0.01" min="0.01" placeholder="0" oninput="calcRow(this)"></td>
+        <td data-label="GST%"><input class="form-control gst-pct-f" type="number" readonly placeholder="0" style="background:#f8f9ff"></td>
+        <td data-label="GST Amt"><input class="form-control gst-amt-f" type="text" readonly placeholder="0.00" style="background:#f8f9ff"></td>
+        <td data-label="Total"><input class="form-control row-total" type="text" readonly placeholder="0.00" style="background:#f8f9ff"></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger btn-icon" onclick="rmRow(this)"><i class="bi bi-trash"></i></button></td>
+      </tr>
+    {% endif %}
+    </tbody>
+  </table>
+  </div>
+
+  <div class="total-box mt-3">
+    <div class="t-row"><span style="color:#6b7280">Subtotal</span><span id="tSubtotal">₹0.00</span></div>
+    <div class="t-row" id="tGstRow" style="display:none"><span class="gst-clr" id="tGstLabel">GST</span><span class="gst-clr" id="tGstAmt">₹0.00</span></div>
+    <div class="t-row grand"><span>Grand Total</span><span id="tGrand">₹0.00</span></div>
+  </div>
+</div>
+
+<div class="card p-4 mb-3">
+  <label class="form-label">Notes</label>
+  <textarea class="form-control" name="notes" rows="2">{{ obj.notes|default:'' }}</textarea>
+</div>
+
+<button type="submit" class="btn btn-primary" style="padding:12px 36px;font-size:15px">
+  <i class="bi bi-check-lg me-2"></i>{{ title }}
+</button>
+</form>
+</div></div></div>
+
+<!-- Confirm number change modal -->
+<div class="confirm-backdrop" id="confirmModal">
+  <div class="confirm-box">
+    <div style="width:64px;height:64px;background:#fef3c7;border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:28px">⚠️</div>
+    <h5>Change Invoice Number?</h5>
+    <p>You are changing the invoice number from:</p>
+    <div class="confirm-old" id="cOld">—</div>
+    <div class="confirm-arrow">↓</div>
+    <div class="confirm-new" id="cNew">—</div>
+    <p style="margin-top:12px;font-size:12px;color:#9ca3af">Make sure this number is unique and not already used.</p>
+    <div class="d-flex gap-3 justify-content-center mt-4">
+      <button class="btn btn-success" style="padding:10px 28px" onclick="applyChange()">
+        <i class="bi bi-check-lg me-1"></i>Yes, Change It
+      </button>
+      <button class="btn btn-outline-secondary" style="padding:10px 20px" onclick="cancelEdit()">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script>
+// ── Invoice number edit/lock/confirm ─────────────────────────────────────────
+var originalNum = document.getElementById('billNumInput').value;
+var tempNum = '';
+
+function startEdit(){
+  var inp = document.getElementById('billNumInput');
+  inp.readOnly = false;
+  inp.classList.add('editable');
+  inp.focus();
+  inp.select();
+  document.getElementById('editBtn').style.display   = 'none';
+  document.getElementById('saveBtn').style.display   = 'inline-flex';
+  document.getElementById('cancelBtn').style.display = 'inline-flex';
+}
+
+function confirmChange(){
+  var inp = document.getElementById('billNumInput');
+  var newVal = inp.value.trim();
+  if(!newVal){ inp.focus(); return; }
+  if(newVal === originalNum){
+    cancelEdit(); return;
+  }
+  // Show confirmation modal
+  tempNum = newVal;
+  document.getElementById('cOld').textContent = originalNum;
+  document.getElementById('cNew').textContent = newVal;
+  document.getElementById('confirmModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function applyChange(){
+  // User confirmed — lock in the new number
+  originalNum = tempNum;
+  document.getElementById('billNumInput').value = tempNum;
+  closeConfirm();
+  lockField();
+}
+
+function cancelEdit(){
+  // Restore original number and lock
+  document.getElementById('billNumInput').value = originalNum;
+  closeConfirm();
+  lockField();
+}
+
+function lockField(){
+  var inp = document.getElementById('billNumInput');
+  inp.readOnly = true;
+  inp.classList.remove('editable');
+  document.getElementById('editBtn').style.display   = 'inline-flex';
+  document.getElementById('saveBtn').style.display   = 'none';
+  document.getElementById('cancelBtn').style.display = 'none';
+}
+
+function closeConfirm(){
+  document.getElementById('confirmModal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+// Close modal on backdrop click
+document.getElementById('confirmModal').addEventListener('click', function(e){
+  if(e.target === this) cancelEdit();
+});
+
+// Allow Enter key to trigger confirm when editing
+document.getElementById('billNumInput').addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){ e.preventDefault(); confirmChange(); }
+  if(e.key === 'Escape'){ cancelEdit(); }
+});
+
+
+// ── GST toggle ────────────────────────────────────────────────────────────────
+function gstOn(){ return document.getElementById('gstChk').checked; }
+function isIgst(){ return document.getElementById('igstChk').checked; }
+
+function toggleGst(){
+  var chk   = document.getElementById('gstChk');
+  var sub   = document.getElementById('gstSub');
+  var badge = document.getElementById('gstBadge');
+  chk.checked = !chk.checked;
+  sub.classList.toggle('show', chk.checked);
+  badge.textContent        = chk.checked ? 'GST ON' : 'GST OFF';
+  badge.style.background   = chk.checked ? '#d1fae5' : '#f3f4f6';
+  badge.style.color        = chk.checked ? '#065f46' : '#6b7280';
+  recalcAll();
+}
+
+document.getElementById('igstChk').addEventListener('change', calcGrand);
+
+// ── Items table ───────────────────────────────────────────────────────────────
+function getProdOptions(){
+  var s = document.querySelector('.prod-sel');
+  if(!s) return '';
+  var o = '<option value="">-- Select --</option>';
+  s.querySelectorAll('option').forEach(function(op){
+    o += '<option value="'+op.value+'" data-bp="'+(op.dataset.bp||'')+
+         '" data-gst="'+(op.dataset.gst||'')+'" data-hsn="'+(op.dataset.hsn||'')+
+         '" data-unit="'+(op.dataset.unit||'')+'">'+op.textContent+'</option>';
+  });
+  return o;
+}
+
+function addRow(){
+  var tr = document.createElement('tr');
+  tr.className = 'item-row';
+  tr.innerHTML =
+    '<td data-label="Product"><select name="product_id[]" class="form-select prod-sel" onchange="fillPrice(this)">'+getProdOptions()+'</select></td>'+
+    '<td data-label="HSN"><input class="form-control hsn-f" type="text" readonly placeholder="—" style="background:#f8f9ff;width:60px"></td>'+
+    '<td data-label="Unit"><input class="form-control unit-f" type="text" readonly placeholder="—" style="background:#f8f9ff;width:55px"></td>'+
+    '<td data-label="Price"><input class="form-control price-f" type="number" step="0.01" name="price[]" placeholder="0.00" oninput="calcRow(this)"></td>'+
+    '<td data-label="Qty"><input class="form-control qty-f" type="number" name="quantity[]" step="0.01" min="0.01" placeholder="0" oninput="calcRow(this)"></td>'+
+    '<td data-label="GST%"><input class="form-control gst-pct-f" type="number" readonly placeholder="0" style="background:#f8f9ff"></td>'+
+    '<td data-label="GST Amt"><input class="form-control gst-amt-f" type="text" readonly placeholder="0.00" style="background:#f8f9ff"></td>'+
+    '<td data-label="Total"><input class="form-control row-total" type="text" readonly placeholder="0.00" style="background:#f8f9ff"></td>'+
+    '<td><button type="button" class="btn btn-sm btn-outline-danger btn-icon" onclick="rmRow(this)"><i class="bi bi-trash"></i></button></td>';
+  document.getElementById('tbody').appendChild(tr);
+}
+
+function fillPrice(sel){
+  var o = sel.options[sel.selectedIndex];
+  var row = sel.closest('tr');
+  row.querySelector('.price-f').value   = o.dataset.bp   || '';
+  row.querySelector('.gst-pct-f').value = o.dataset.gst  || '0';
+  row.querySelector('.hsn-f').value     = o.dataset.hsn  || '';
+  row.querySelector('.unit-f').value    = o.dataset.unit || '';
+  calcRow(row.querySelector('.qty-f'));
+}
+
+function calcRow(el){
+  var row   = el.closest('tr');
+  var price = parseFloat(row.querySelector('.price-f').value)   || 0;
+  var qty   = parseFloat(row.querySelector('.qty-f').value)     || 0;
+  var gstPct= parseFloat(row.querySelector('.gst-pct-f').value) || 0;
+  var base  = price * qty;
+  var gstAmt= (gstOn() && gstPct > 0) ? parseFloat((base * gstPct / 100).toFixed(2)) : 0;
+  row.querySelector('.gst-amt-f').value = gstAmt.toFixed(2);
+  row.querySelector('.row-total').value = (base + gstAmt).toFixed(2);
+  calcGrand();
+}
+
+function recalcAll(){
+  document.querySelectorAll('.item-row').forEach(function(row){
+    var p = parseFloat(row.querySelector('.price-f')?.value)||0;
+    var q = parseFloat(row.querySelector('.qty-f')?.value)||0;
+    var g = parseFloat(row.querySelector('.gst-pct-f')?.value)||0;
+    var base = p*q;
+    var ga = (gstOn()&&g>0) ? parseFloat((base*g/100).toFixed(2)) : 0;
+    if(row.querySelector('.gst-amt-f')) row.querySelector('.gst-amt-f').value = ga.toFixed(2);
+    if(row.querySelector('.row-total')) row.querySelector('.row-total').value = (base+ga).toFixed(2);
+  });
+  calcGrand();
+}
+
+function calcGrand(){
+  var sub=0, gst=0;
+  document.querySelectorAll('.item-row').forEach(function(row){
+    sub += (parseFloat(row.querySelector('.price-f')?.value)||0) *
+           (parseFloat(row.querySelector('.qty-f')?.value)||0);
+    gst += parseFloat(row.querySelector('.gst-amt-f')?.value)||0;
+  });
+  document.getElementById('tSubtotal').textContent = '₹'+sub.toFixed(2);
+  document.getElementById('tGstAmt').textContent   = '₹'+gst.toFixed(2);
+  document.getElementById('tGrand').textContent    = '₹'+(sub+gst).toFixed(2);
+  var gstRow = document.getElementById('tGstRow');
+  var lbl    = document.getElementById('tGstLabel');
+  if(gstOn()){
+    gstRow.style.display = '';
+    lbl.textContent = isIgst() ? 'IGST Amount' : 'SGST + CGST';
+  } else {
+    gstRow.style.display = 'none';
+  }
+}
+
+function rmRow(btn){
+  if(document.querySelectorAll('.item-row').length > 1){
+    btn.closest('tr').remove(); calcGrand();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function(){ recalcAll(); });
+</script>
+{% endblock %}

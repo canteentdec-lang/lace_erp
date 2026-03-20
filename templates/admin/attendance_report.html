@@ -1,0 +1,41 @@
+{% extends 'base.html' %}{% block title %}Attendance Report{% endblock %}
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main">
+<div class="topbar"><div class="d-flex align-items-center gap-3"><button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button><h5>Attendance Report</h5></div>
+<button onclick="window.print()" class="btn btn-sm btn-outline-primary no-print"><i class="bi bi-printer me-1"></i>Print</button>
+</div>
+<div class="page-body">
+
+<div class="card p-3 mb-3 no-print">
+<form method="get" class="row g-2 align-items-end">
+<div class="col-6 col-sm-3"><label class="form-label">From</label><input type="date" class="form-control" name="from_date" value="{{ from_date }}"></div>
+<div class="col-6 col-sm-3"><label class="form-label">To</label><input type="date" class="form-control" name="to_date" value="{{ to_date }}"></div>
+<div class="col-6 col-sm-3"><label class="form-label">Employee</label>
+<select class="form-select" name="employee">
+<option value="">All Employees</option>
+{% for e in emps %}<option value="{{ e.pk }}" {% if sel_emp == e.pk|stringformat:"s" %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+</select></div>
+<div class="col-6 col-sm-3"><button type="submit" class="btn btn-primary w-100">Filter</button></div>
+</form>
+</div>
+
+<div class="card">
+<div class="table-responsive"><table class="table">
+<thead><tr><th>Date</th><th>Employee</th><th>Entry</th><th>Exit</th><th>Hours</th><th>Shift</th><th>MTS</th></tr></thead>
+<tbody>
+{% for a in atts %}
+<tr>
+<td data-label="Date">{{ a.date|date:"d M Y" }}</td>
+<td data-label="Employee"><strong>{{ a.employee.name }}</strong></td>
+<td data-label="Entry">{{ a.entry_time|time:"H:i"|default:"—" }}</td>
+<td data-label="Exit">{% if a.exit_time %}{{ a.exit_time|time:"H:i" }}{% else %}<span class="badge badge-green">Inside</span>{% endif %}</td>
+<td data-label="Hours"><strong style="color:#6C63FF">{{ a.total_hours }}</strong></td>
+<td data-label="Shift">{% if a.work_entry %}<span class="badge badge-purple">{{ a.work_entry.get_shift_display }}</span>{% else %}—{% endif %}</td>
+<td data-label="MTS">{% if a.work_entry %}{{ a.work_entry.total_mts|floatformat:2 }}{% else %}—{% endif %}</td>
+</tr>
+{% empty %}<tr><td colspan="7" class="text-center text-muted py-4">No attendance records found</td></tr>{% endfor %}
+</tbody>
+</table></div>
+</div>
+
+</div></div></div>{% endblock %}

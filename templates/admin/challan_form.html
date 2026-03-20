@@ -1,0 +1,131 @@
+{% extends 'base.html' %}{% block title %}{{ title }}{% endblock %}
+{% block head %}
+<style>
+.items-table th{font-size:11px;background:#f8f9ff;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;padding:10px 8px}
+.items-table td{padding:6px 8px;vertical-align:middle}
+.items-table .form-control,.items-table .form-select{padding:8px 10px;font-size:13px;border-radius:8px}
+.total-box{background:linear-gradient(135deg,#d1fae5,#ecfdf5);border-radius:14px;padding:20px;text-align:center}
+.total-box .val{font-size:36px;font-weight:700;color:#059669}
+@media(max-width:768px){
+  .items-table thead{display:none}
+  .items-table tbody tr{display:block;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:12px;padding:4px 2px;background:#fff}
+  .items-table tbody td{display:block;border-bottom:1px solid #f0f0f0;padding:8px 12px}
+  .items-table tbody td::before{content:attr(data-label);font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
+  .items-table tbody td:last-child{border-bottom:none}
+}
+</style>
+{% endblock %}
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main"><div class="topbar">
+<div class="d-flex align-items-center gap-3"><button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button><h5>{{ title }}</h5></div>
+<a href="{% url 'challan_list' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+</div>
+<div class="page-body">
+{% if obj and obj.bill %}<div class="alert" style="background:#fef3c7;border:none;border-radius:12px;color:#92400e;font-size:13px;padding:12px 16px"><i class="bi bi-exclamation-triangle me-2"></i>This challan is linked to Bill <strong>#{{ obj.bill.bill_number }}</strong>. Editing the bill will auto-sync products/quantities but prices remain editable here.</div>{% endif %}
+<form method="post" id="challanForm">{% csrf_token %}
+<div class="card p-4 mb-3">
+  <div class="row g-3">
+    <div class="col-sm-4"><label class="form-label">Challan Number *</label><input class="form-control" name="challan_number" value="{{ obj.challan_number|default:'' }}" required placeholder="CH-001"></div>
+    <div class="col-sm-4"><label class="form-label">Party *</label>
+    <select class="form-select" name="party" required><option value="">-- Select Party --</option>
+    {% for p in parties %}<option value="{{ p.pk }}" {% if obj and obj.party.pk == p.pk %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
+    </select></div>
+    <div class="col-sm-4"><label class="form-label">Date *</label><input class="form-control" type="date" name="date" value="{{ obj.date|date:'Y-m-d'|default:'' }}" required></div>
+  </div>
+</div>
+
+<div class="card p-4 mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div style="font-weight:700;font-size:15px">Challan Items <small style="font-weight:400;color:#6b7280;font-size:13px">(Challan Price — editable)</small></div>
+    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Add Item</button>
+  </div>
+  <div class="table-responsive">
+  <table class="table items-table" id="itemsTable">
+    <thead><tr><th>Product</th><th>Challan Price (₹) <span style="color:#ef4444">editable</span></th><th>Quantity (m)</th><th>Total</th><th></th></tr></thead>
+    <tbody id="tbody">
+    {% if obj and obj.items.all %}
+      {% for item in obj.items.all %}
+      <tr class="item-row">
+        <td data-label="Product"><select name="product_id[]" class="form-select prod-sel" onchange="fillPrice(this)">
+          <option value="">-- Select --</option>
+          {% for p in products %}<option value="{{ p.pk }}" data-bp="{{ p.billing_price }}" data-cp="{{ p.challan_price }}" {% if p.pk == item.product.pk %}selected{% endif %}>{{ p.design_name }}</option>{% endfor %}
+          </select></td>
+        <td data-label="Challan Price"><input class="form-control price-f" type="number" step="0.01" name="price[]" value="{{ item.price }}" oninput="calcRow(this)" required></td>
+        <td data-label="Quantity"><input class="form-control qty-f" type="number" name="quantity[]" step="0.01" min="0.01" value="{{ item.quantity }}" oninput="calcRow(this)" required></td>
+        <td data-label="Total"><input class="form-control row-total" type="text" readonly value="{{ item.total }}"></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger btn-icon" onclick="rmRow(this)"><i class="bi bi-trash"></i></button></td>
+      </tr>
+      {% endfor %}
+    {% else %}
+      <tr class="item-row">
+        <td data-label="Product"><select name="product_id[]" class="form-select prod-sel" onchange="fillPrice(this)">
+          <option value="">-- Select --</option>
+          {% for p in products %}<option value="{{ p.pk }}" data-bp="{{ p.billing_price }}" data-cp="{{ p.challan_price }}">{{ p.design_name }}</option>{% endfor %}
+          </select></td>
+        <td data-label="Challan Price"><input class="form-control price-f" type="number" step="0.01" name="price[]" placeholder="0.00" oninput="calcRow(this)" required></td>
+        <td data-label="Quantity"><input class="form-control qty-f" type="number" name="quantity[]" step="0.01" min="0.01" placeholder="0" oninput="calcRow(this)"></td>
+        <td data-label="Total"><input class="form-control row-total" type="text" readonly placeholder="0.00"></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger btn-icon" onclick="rmRow(this)"><i class="bi bi-trash"></i></button></td>
+      </tr>
+    {% endif %}
+    </tbody>
+  </table>
+  </div>
+  <div class="total-box mt-3"><div class="val" id="grandTotal">₹0.00</div><div style="font-size:12px;color:#6b7280;margin-top:4px">Grand Total (Challan Price)</div></div>
+</div>
+<div class="card p-4 mb-3"><label class="form-label">Notes</label><textarea class="form-control" name="notes" rows="2" placeholder="Optional...">{{ obj.notes|default:'' }}</textarea></div>
+<button type="submit" class="btn btn-primary" style="padding:12px 32px;font-size:15px"><i class="bi bi-check-lg me-2"></i>{{ title }}</button>
+</form></div></div></div>
+{% endblock %}
+{% block js %}
+<script>
+function getProdOptions(){
+  let opts='<option value="">-- Select --</option>';
+  document.querySelector('.prod-sel')?.querySelectorAll('option').forEach(o=>{
+    opts+=`<option value="${o.value}" data-bp="${o.dataset.bp||''}" data-cp="${o.dataset.cp||''}">${o.textContent}</option>`;
+  });
+  return opts;
+}
+function addRow(){
+  const tr=document.createElement('tr');
+  tr.className='item-row';
+  tr.innerHTML=`
+    <td data-label="Product"><select name="product_id[]" class="form-select prod-sel" onchange="fillPrice(this)">${getProdOptions()}</select></td>
+    <td data-label="Challan Price"><input class="form-control price-f" type="number" step="0.01" name="price[]" placeholder="0.00" oninput="calcRow(this)" required></td>
+    <td data-label="Quantity"><input class="form-control qty-f" type="number" name="quantity[]" step="0.01" min="0.01" placeholder="0" oninput="calcRow(this)"></td>
+    <td data-label="Total"><input class="form-control row-total" type="text" readonly placeholder="0.00"></td>
+    <td><button type="button" class="btn btn-sm btn-outline-danger btn-icon" onclick="rmRow(this)"><i class="bi bi-trash"></i></button></td>`;
+  document.getElementById('tbody').appendChild(tr);
+}
+function fillPrice(sel){
+  const opt=sel.options[sel.selectedIndex];
+  const row=sel.closest('tr');
+  // Use challan price by default
+  row.querySelector('.price-f').value=opt.dataset.cp||'';
+  calcRow(row.querySelector('.price-f'));
+}
+function calcRow(el){
+  const row=el.closest('tr');
+  const price=parseFloat(row.querySelector('.price-f').value)||0;
+  const qty=parseFloat(row.querySelector('.qty-f').value)||0;
+  row.querySelector('.row-total').value=(price*qty).toFixed(2);
+  calcGrand();
+}
+function calcGrand(){
+  let t=0;
+  document.querySelectorAll('.row-total').forEach(el=>t+=parseFloat(el.value)||0);
+  document.getElementById('grandTotal').textContent='₹'+t.toFixed(2);
+}
+function rmRow(btn){
+  if(document.querySelectorAll('.item-row').length>1){btn.closest('tr').remove();calcGrand();}
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('.item-row').forEach(row=>{
+    const pf=parseFloat(row.querySelector('.price-f')?.value)||0;
+    const qf=parseFloat(row.querySelector('.qty-f')?.value)||0;
+    if(row.querySelector('.row-total'))row.querySelector('.row-total').value=(pf*qf).toFixed(2);
+  });
+  calcGrand();
+});
+</script>
+{% endblock %}

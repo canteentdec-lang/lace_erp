@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% block title %}Expenses{% endblock %}
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main"><div class="topbar"><div class="d-flex align-items-center gap-3"><button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button><h5>Expenses</h5></div><a href="{% url 'expense_add' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Add</a></div>
+<div class="page-body">
+<div class="stat-card mb-3" style="display:inline-flex;padding:16px 24px"><div class="stat-icon" style="background:#fee2e2;color:#991b1b"><i class="bi bi-credit-card"></i></div><div><div class="stat-val">₹{{ total|floatformat:0 }}</div><div class="stat-lbl">Total Expenses</div></div></div>
+<div class="card"><div class="table-responsive"><table class="table">
+<thead><tr><th>Category</th><th>Amount</th><th>Date</th><th>Description</th><th>Actions</th></tr></thead>
+<tbody>{% for e in expenses %}
+<tr><td data-label="Category"><span class="badge badge-purple">{{ e.get_category_display }}</span></td>
+<td data-label="Amount"><strong>₹{{ e.amount }}</strong></td>
+<td data-label="Date">{{ e.date|date:"d M Y" }}</td>
+<td data-label="Description">{{ e.description|default:"—"|truncatechars:30 }}</td>
+<td data-label="Actions"><a href="{% url 'expense_delete' e.pk %}" class="btn btn-sm btn-outline-danger btn-icon"><i class="bi bi-trash"></i></a></td>
+</tr>{% empty %}<tr><td colspan="5" class="text-center text-muted py-4">No expenses</td></tr>{% endfor %}
+</tbody></table></div></div></div></div></div>{% endblock %}

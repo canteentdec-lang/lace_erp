@@ -1,0 +1,21 @@
+{% extends 'base.html' %}{% block title %}Bills{% endblock %}
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main"><div class="topbar"><div class="d-flex align-items-center gap-3"><button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button><h5>Bills</h5></div><a href="{% url 'bill_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Create Bill</a></div>
+<div class="page-body"><div class="card"><div class="table-responsive"><table class="table">
+<thead><tr><th>Bill No.</th><th>Party</th><th>Date</th><th>Amount</th><th>Challan</th><th>Actions</th></tr></thead>
+<tbody>{% for b in bills %}
+<tr>
+<td data-label="Bill No."><strong>#{{ b.bill_number }}</strong></td>
+<td data-label="Party">{{ b.party.name }}</td>
+<td data-label="Date">{{ b.date|date:"d M Y" }}</td>
+<td data-label="Amount"><strong>₹{{ b.total_amount }}</strong></td>
+<td data-label="Challan">
+{% if b.challan and b.challan.pk %}<a href="{% url 'challan_detail' b.challan.pk %}" class="badge badge-green" style="text-decoration:none">View Challan</a>{% else %}<span class="text-muted">—</span>{% endif %}
+</td>
+<td data-label="Actions">
+<a href="{% url 'bill_detail' b.pk %}" class="btn btn-sm btn-outline-primary btn-icon me-1"><i class="bi bi-eye"></i></a>
+<a href="{% url 'bill_edit' b.pk %}" class="btn btn-sm btn-outline-secondary btn-icon me-1"><i class="bi bi-pencil"></i></a>
+<a href="{% url 'bill_delete' b.pk %}" class="btn btn-sm btn-outline-danger btn-icon"><i class="bi bi-trash"></i></a>
+</td>
+</tr>{% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No bills yet</td></tr>{% endfor %}
+</tbody></table></div></div></div></div></div>{% endblock %}

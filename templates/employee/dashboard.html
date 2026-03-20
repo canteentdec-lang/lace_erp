@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#6C63FF">
+<title>डैशबोर्ड - {{ emp.name }}</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box}body{font-family:'Poppins',sans-serif;background:#F4F6FF;color:#1e1b4b;min-height:100vh;margin:0}
+.topbar{background:linear-gradient(135deg,#6C63FF,#4834d4);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(108,99,255,.3)}
+.topbar-inner{display:flex;align-items:center;justify-content:space-between;max-width:600px;margin:0 auto}
+.topbar h5{font-weight:700;font-size:15px;margin:0}
+.topbar small{opacity:.8;font-size:12px}
+.logout-btn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;text-decoration:none;font-family:inherit}
+.container{max-width:600px;margin:0 auto;padding:16px}
+
+/* Stat cards */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.scard{background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 12px rgba(108,99,255,.1);display:flex;align-items:center;gap:12px}
+.scard-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.scard-val{font-size:20px;font-weight:700;line-height:1}
+.scard-lbl{font-size:11px;color:#6b7280;margin-top:2px}
+
+/* Attendance button */
+.att-card{background:#fff;border-radius:16px;padding:24px;box-shadow:0 2px 12px rgba(108,99,255,.1);text-align:center;margin-bottom:16px}
+.att-card h6{font-weight:700;font-size:14px;color:#6b7280;margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px}
+.att-btn{width:140px;height:140px;border-radius:50%;border:none;cursor:pointer;font-size:18px;font-weight:700;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;margin:0 auto;transition:.2s;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.att-btn i{font-size:36px}
+.btn-enter{background:linear-gradient(135deg,#10b981,#059669)}
+.btn-enter:hover{transform:scale(1.04);box-shadow:0 12px 32px rgba(16,185,129,.4)}
+.btn-exit{background:linear-gradient(135deg,#ef4444,#dc2626)}
+.btn-exit:hover{transform:scale(1.04);box-shadow:0 12px 32px rgba(239,68,68,.4)}
+.timer{font-size:36px;font-weight:700;color:#6C63FF;font-variant-numeric:tabular-nums;letter-spacing:2px;margin-bottom:4px;font-family:monospace}
+.time-info{font-size:12px;color:#6b7280;margin-bottom:16px}
+.today-box{background:#f4f6ff;border-radius:10px;padding:12px;margin-top:16px}
+.today-box .val{font-size:22px;font-weight:700;color:#6C63FF}
+.today-box .lbl{font-size:12px;color:#6b7280}
+
+/* Chart card */
+.chart-card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 2px 12px rgba(108,99,255,.1);margin-bottom:16px}
+.chart-card h6{font-weight:700;font-size:14px;color:#6b7280;margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px}
+
+/* History link */
+.hist-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;border-radius:12px;padding:14px;text-decoration:none;color:#6C63FF;font-weight:600;font-size:14px;box-shadow:0 2px 12px rgba(108,99,255,.1);margin-bottom:16px;transition:.2s}
+.hist-btn:hover{background:#ede9ff;color:#6C63FF}
+
+/* Toast */
+.toast-wrap{position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;width:90%;max-width:360px;display:flex;flex-direction:column;gap:8px}
+.toast-msg{background:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 4px 20px rgba(0,0,0,.15);border-left:4px solid #10b981;font-size:13px;display:flex;gap:8px;align-items:center;animation:si .3s ease}
+.toast-msg.err{border-left-color:#ef4444}
+@keyframes si{from{transform:translateY(-20px);opacity:0}to{transform:none;opacity:1}}
+
+@media(max-width:360px){.att-btn{width:120px;height:120px}.att-btn i{font-size:28px}.timer{font-size:28px}}
+</style>
+</head>
+<body>
+
+{% if messages %}
+<div class="toast-wrap">
+{% for m in messages %}
+<div class="toast-msg {% if m.tags == 'error' %}err{% endif %}">
+  <i class="bi {% if m.tags == 'error' %}bi-x-circle text-danger{% else %}bi-check-circle text-success{% endif %}"></i>{{ m }}
+</div>
+{% endfor %}
+</div>
+{% endif %}
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div><h5><i class="bi bi-gem me-2"></i>{{ emp.name }}</h5><small>{{ today|date:"d F Y, l" }}</small></div>
+    <a href="{% url 'emp_logout' %}" class="logout-btn"><i class="bi bi-box-arrow-right me-1"></i>बाहर</a>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="scard">
+      <div class="scard-icon" style="background:#ede9ff;color:#6C63FF"><i class="bi bi-calendar3"></i></div>
+      <div><div class="scard-val">{{ working_days }}</div><div class="scard-lbl">काम के दिन</div></div>
+    </div>
+    <div class="scard">
+      <div class="scard-icon" style="background:#d1fae5;color:#065f46"><i class="bi bi-clock"></i></div>
+      <div><div class="scard-val">{{ total_hours }}</div><div class="scard-lbl">कुल घंटे</div></div>
+    </div>
+    <div class="scard">
+      <div class="scard-icon" style="background:#fef3c7;color:#92400e"><i class="bi bi-currency-rupee"></i></div>
+      <div><div class="scard-val">₹{{ salary_earned|floatformat:0 }}</div><div class="scard-lbl">वेतन अर्जित</div></div>
+    </div>
+    <div class="scard">
+      <div class="scard-icon" style="background:#fee2e2;color:#991b1b"><i class="bi bi-dash-circle"></i></div>
+      <div><div class="scard-val">₹{{ net_salary|floatformat:0 }}</div><div class="scard-lbl">नेट वेतन</div></div>
+    </div>
+  </div>
+
+  <!-- Attendance button -->
+  <div class="att-card">
+    <h6>आज की उपस्थिति</h6>
+    {% if is_inside %}
+      <div class="timer" id="timer">00:00:00</div>
+      <div class="time-info">प्रवेश: <strong>{{ open_att.entry_time|time:"H:i" }}</strong></div>
+      <a href="{% url 'mark_exit' %}">
+        <button class="att-btn btn-exit"><i class="bi bi-door-open"></i>बाहर</button>
+      </a>
+    {% else %}
+      <form method="post" action="{% url 'mark_entry' %}">{% csrf_token %}
+        <button type="submit" class="att-btn btn-enter"><i class="bi bi-door-closed"></i>प्रवेश</button>
+      </form>
+    {% endif %}
+    <div class="today-box">
+      <div class="val">{{ today_hours }} <small style="font-size:14px;color:#6b7280">घंटे</small></div>
+      <div class="lbl">आज का कुल समय</div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-card">
+    <h6>पिछले 7 दिन (घंटे)</h6>
+    <canvas id="hChart" height="180"></canvas>
+  </div>
+
+  <!-- History link -->
+  <a href="{% url 'emp_history' %}" class="hist-btn">
+    <i class="bi bi-calendar-check"></i>उपस्थिति इतिहास देखें
+  </a>
+</div>
+
+<script>
+{% if is_inside %}
+const entryISO = "{{ open_att.entry_time|date:'Y-m-d' }}T{{ open_att.entry_time|time:'H:i:s' }}";
+const entry = new Date(entryISO);
+function tick(){
+  const diff = Math.floor((Date.now()-entry)/1000);
+  const h = String(Math.floor(diff/3600)).padStart(2,'0');
+  const m = String(Math.floor((diff%3600)/60)).padStart(2,'0');
+  const s = String(diff%60).padStart(2,'0');
+  document.getElementById('timer').textContent = h+':'+m+':'+s;
+}
+tick(); setInterval(tick,1000);
+{% endif %}
+
+new Chart(document.getElementById('hChart'),{
+  type:'bar',
+  data:{
+    labels:{{ chart_labels|safe }},
+    datasets:[{label:'घंटे',data:{{ chart_data|safe }},
+      backgroundColor:'rgba(108,99,255,.7)',borderColor:'#6C63FF',borderWidth:2,borderRadius:8}]
+  },
+  options:{responsive:true,plugins:{legend:{display:false}},
+    scales:{y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'}},x:{grid:{display:false}}}}
+});
+
+setTimeout(()=>{document.querySelectorAll('.toast-msg').forEach(el=>{el.style.opacity='0';el.style.transition='.4s';setTimeout(()=>el.remove(),400)})},3500);
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{% extends 'base.html' %}{% block title %}Advances{% endblock %}
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main"><div class="topbar"><div class="d-flex align-items-center gap-3"><button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button><h5>Advances (उपाड)</h5></div><a href="{% url 'advance_add' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Add</a></div>
+<div class="page-body"><div class="card"><div class="table-responsive"><table class="table">
+<thead><tr><th>Employee</th><th>Amount</th><th>Date</th><th>Status</th><th>Note</th></tr></thead>
+<tbody>{% for a in advances %}
+<tr><td data-label="Employee"><strong>{{ a.employee.name }}</strong></td>
+<td data-label="Amount"><strong>₹{{ a.amount }}</strong></td>
+<td data-label="Date">{{ a.date|date:"d M Y" }}</td>
+<td data-label="Status">{% if a.is_deducted %}<span class="badge badge-green">Deducted</span>{% else %}<span class="badge badge-yellow">Pending</span>{% endif %}</td>
+<td data-label="Note">{{ a.note|default:"—"|truncatechars:30 }}</td>
+</tr>{% empty %}<tr><td colspan="5" class="text-center text-muted py-4">No advances</td></tr>{% endfor %}
+</tbody></table></div></div></div></div></div>{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}{% block title %}Inventory{% endblock %}
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main">
+<div class="topbar"><div class="d-flex align-items-center gap-3"><button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button><h5>Inventory</h5></div>
+<button onclick="window.print()" class="btn btn-sm btn-outline-primary no-print"><i class="bi bi-printer me-1"></i>Print</button>
+</div>
+<div class="page-body">
+<div style="font-size:13px;color:#6b7280;margin-bottom:12px"><i class="bi bi-info-circle me-1"></i>Stock = Total Produced − Total Sold</div>
+<div class="card">
+<div class="table-responsive"><table class="table">
+<thead><tr><th>Product</th><th>Produced (m)</th><th>Sold (m)</th><th>Stock (m)</th><th>Status</th></tr></thead>
+<tbody>
+{% for r in rows %}
+<tr>
+<td data-label="Product"><strong>{{ r.product.design_name }}</strong></td>
+<td data-label="Produced">{{ r.produced|floatformat:2 }}</td>
+<td data-label="Sold">{{ r.sold|floatformat:2 }}</td>
+<td data-label="Stock"><strong>{{ r.stock|floatformat:2 }}</strong></td>
+<td data-label="Status">
+{% if r.stock > 0 %}<span class="badge badge-green">In Stock</span>
+{% elif r.stock == 0 %}<span class="badge badge-yellow">Out of Stock</span>
+{% else %}<span class="badge badge-red">Oversold</span>{% endif %}
+</td>
+</tr>
+{% empty %}<tr><td colspan="5" class="text-center text-muted py-4">No inventory data</td></tr>{% endfor %}
+</tbody>
+</table></div>
+</div>
+</div></div></div>{% endblock %}

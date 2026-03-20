@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#ef4444">
+<title>काम का विवरण</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{font-family:'Poppins',sans-serif;background:#F4F6FF;min-height:100vh;margin:0}
+.topbar{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:14px 16px;text-align:center}
+.topbar h5{font-weight:700;margin:0;font-size:16px}
+.topbar p{font-size:12px;opacity:.85;margin:2px 0 0}
+.container{max-width:520px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:16px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-bottom:16px;border:none}
+.info-box{background:#fef3c7;border-radius:10px;padding:14px;display:flex;align-items:center;gap:10px;font-size:13px;color:#92400e;margin-bottom:20px}
+label{font-size:13px;font-weight:600;color:#6b7280;display:block;margin-bottom:5px}
+select,input[type=number],input[type=text]{width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:15px;font-family:inherit;background:#f9f8ff;transition:.2s}
+select:focus,input:focus{border-color:#6C63FF;box-shadow:0 0 0 3px rgba(108,99,255,.13);outline:none;background:#fff}
+.total-box{background:linear-gradient(135deg,#ede9ff,#f4f0ff);border-radius:12px;padding:16px;text-align:center;margin:16px 0}
+.total-box .val{font-size:32px;font-weight:700;color:#6C63FF}
+.total-box .lbl{font-size:12px;color:#6b7280;margin-top:4px}
+.btn-exit{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;padding:14px;width:100%;border-radius:12px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;transition:.2s}
+.btn-exit:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(239,68,68,.4)}
+.btn-back{background:#f4f6ff;color:#6C63FF;border:1.5px solid #6C63FF;padding:12px;width:100%;border-radius:12px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:10px;transition:.2s}
+.shift-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+.shift-btn{padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;background:#f9f8ff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;color:#1e1b4b}
+.shift-btn.active{border-color:#6C63FF;background:#ede9ff;color:#6C63FF}
+.mts-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mts-btn{padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;background:#f9f8ff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;color:#1e1b4b;text-align:center}
+.mts-btn.active{border-color:#6C63FF;background:#ede9ff;color:#6C63FF}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h5><i class="bi bi-clipboard-check me-2"></i>बाहर जाने से पहले</h5>
+  <p>काम का विवरण भरें — प्रवेश {{ att.entry_time|time:"H:i" }}</p>
+</div>
+<div class="container">
+  <form method="post" id="wf">
+    {% csrf_token %}
+    <input type="hidden" name="shift" id="shiftVal" value="day">
+    <input type="hidden" name="mts_choice" id="mtsVal" value="24">
+
+    <div class="card">
+      <!-- Shift -->
+      <div class="mb-4">
+        <label>शिफ्ट (Shift)</label>
+        <div class="shift-btns">
+          <button type="button" class="shift-btn active" onclick="setShift('day',this)"><i class="bi bi-sun me-1"></i>दिन (Day)</button>
+          <button type="button" class="shift-btn" onclick="setShift('night',this)"><i class="bi bi-moon me-1"></i>रात (Night)</button>
+        </div>
+      </div>
+
+      <!-- Katay -->
+      <div class="mb-4">
+        <label>कटाई (Katay) <span style="color:#ef4444">*</span></label>
+        <input type="number" name="katay" id="katay" min="1" placeholder="0" required oninput="calc()">
+      </div>
+
+      <!-- MTS -->
+      <div class="mb-3">
+        <label>MTS प्रति कटाई</label>
+        <div class="mts-grid">
+          <button type="button" class="mts-btn active" onclick="setMts(24,this)">24</button>
+          <button type="button" class="mts-btn" onclick="setMts(17,this)">17</button>
+          <button type="button" class="mts-btn" onclick="setMts(36,this)">36</button>
+          <button type="button" class="mts-btn" onclick="setMts(0,this)">Custom</button>
+        </div>
+        <div id="customDiv" style="display:none;margin-top:10px">
+          <input type="number" id="customMts" name="custom_mts" placeholder="Custom MTS दर्ज करें" step="0.01" oninput="calc()">
+        </div>
+      </div>
+
+      <!-- Total MTS display -->
+      <div class="total-box">
+        <div class="val" id="totalMts">0</div>
+        <div class="lbl">कुल MTS = कटाई × MTS</div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-exit"><i class="bi bi-door-open me-2"></i>बाहर जाएं</button>
+    <button type="button" class="btn-back" onclick="history.back()">← वापस जाएं</button>
+  </form>
+</div>
+<script>
+let currentMts = 24;
+function setShift(v, el){
+  document.getElementById('shiftVal').value = v;
+  document.querySelectorAll('.shift-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+}
+function setMts(v, el){
+  currentMts = v;
+  document.getElementById('mtsVal').value = v;
+  document.querySelectorAll('.mts-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('customDiv').style.display = v===0 ? 'block':'none';
+  calc();
+}
+function calc(){
+  const k = parseFloat(document.getElementById('katay').value)||0;
+  const m = currentMts===0 ? (parseFloat(document.getElementById('customMts')?.value)||0) : currentMts;
+  document.getElementById('totalMts').textContent = (k*m).toFixed(2);
+}
+</script>
+</body>
+</html>

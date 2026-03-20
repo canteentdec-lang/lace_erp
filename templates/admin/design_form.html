@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% block title %}{{ title }}{% endblock %}
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main"><div class="topbar"><div class="d-flex align-items-center gap-3"><button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button><h5>{{ title }}</h5></div><a href="{% url 'design_list' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-left me-1"></i>Back</a></div>
+<div class="page-body"><div class="row justify-content-center"><div class="col-md-6 col-lg-4"><div class="card p-4">
+<div class="alert alert-info" style="font-size:12px;border-radius:10px;border:none;background:#ede9ff;color:#5149e0;padding:10px 14px;margin-bottom:20px">
+<i class="bi bi-info-circle me-1"></i>Patti count is used to proportionally split MTS across designs on the same machine.
+</div>
+<form method="post">{% csrf_token %}
+<div class="mb-3"><label class="form-label">Machine *</label>
+<select class="form-select" name="machine" required>
+<option value="">-- Select Machine --</option>
+{% for m in machines %}<option value="{{ m.pk }}" {% if obj and obj.machine.pk == m.pk %}selected{% endif %}>Machine {{ m.machine_number }}</option>{% endfor %}
+</select></div>
+<div class="mb-3"><label class="form-label">Design Name *</label><input class="form-control" name="design_name" value="{{ obj.design_name|default:'' }}" required></div>
+<div class="mb-4"><label class="form-label">Patti Count *</label><input class="form-control" type="number" min="1" name="patti_count" value="{{ obj.patti_count|default:'' }}" required></div>
+<button type="submit" class="btn btn-primary w-100">Save Design</button>
+</form></div></div></div></div></div></div>{% endblock %}

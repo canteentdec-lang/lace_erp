@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block body %}
+<div class="layout">
+{% include 'admin/sidebar.html' %}
+<div class="main">
+  <div class="topbar">
+    <div class="d-flex align-items-center gap-3">
+      <button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+      <h5>Admin Dashboard</h5>
+    </div>
+    <span style="font-size:12px;color:#6b7280">{% now "d M Y" %}</span>
+  </div>
+  <div class="page-body">
+
+    <!-- Row 1: Core stats -->
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-sm-4 col-lg-2">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#ede9ff;color:#6C63FF"><i class="bi bi-people"></i></div>
+          <div><div class="stat-val">{{ total_emp }}</div><div class="stat-lbl">Employees</div></div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-4 col-lg-2">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#dbeafe;color:#1d4ed8"><i class="bi bi-rulers"></i></div>
+          <div><div class="stat-val">{{ total_prod|floatformat:0 }}</div><div class="stat-lbl">MTS This Month</div></div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-4 col-lg-2">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#d1fae5;color:#065f46"><i class="bi bi-truck"></i></div>
+          <div><div class="stat-val" style="font-size:16px">₹{{ challan_revenue|floatformat:0 }}</div><div class="stat-lbl">Challan Revenue</div></div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-4 col-lg-2">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fee2e2;color:#991b1b"><i class="bi bi-credit-card"></i></div>
+          <div><div class="stat-val" style="font-size:16px">₹{{ total_all_exp|floatformat:0 }}</div><div class="stat-lbl">Total Expenses</div></div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-4 col-lg-2">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fef3c7;color:#92400e"><i class="bi bi-wallet2"></i></div>
+          <div><div class="stat-val" style="font-size:16px">₹{{ total_salary|floatformat:0 }}</div><div class="stat-lbl">Salary</div></div>
+        </div>
+      </div>
+      <div class="col-6 col-sm-4 col-lg-2">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:{% if net_income >= 0 %}#d1fae5;color:#065f46{% else %}#fee2e2;color:#991b1b{% endif %}">
+            <i class="bi bi-{% if net_income >= 0 %}graph-up-arrow{% else %}graph-down-arrow{% endif %}"></i>
+          </div>
+          <div>
+            <div class="stat-val" style="font-size:16px;color:{% if net_income >= 0 %}#065f46{% else %}#ef4444{% endif %}">
+              ₹{{ net_income|floatformat:0 }}
+            </div>
+            <div class="stat-lbl">Net Income</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Income breakdown card -->
+    <div class="card p-3 mb-3">
+      <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px">
+        Income Summary — This Month
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div style="background:#f0fdf4;border-radius:12px;padding:16px">
+            <div style="font-size:12px;color:#6b7280;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Revenue (Challan Price)</div>
+            <div style="font-size:24px;font-weight:800;color:#065f46">₹{{ challan_revenue|floatformat:2 }}</div>
+            <div style="font-size:11px;color:#6b7280;margin-top:4px">Based on actual challan selling price</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div style="background:#fef2f2;border-radius:12px;padding:16px">
+            <div style="font-size:12px;color:#6b7280;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Expenses Breakdown</div>
+            <div class="d-flex justify-content-between" style="font-size:13px;margin-bottom:4px">
+              <span style="color:#6b7280">Other Expenses</span>
+              <span style="font-weight:600">₹{{ total_exp|floatformat:0 }}</span>
+            </div>
+            <div class="d-flex justify-content-between" style="font-size:13px;margin-bottom:8px">
+              <span style="color:#6b7280">Salary</span>
+              <span style="font-weight:600">₹{{ total_salary|floatformat:0 }}</span>
+            </div>
+            <div class="d-flex justify-content-between" style="font-size:14px;border-top:1px solid #fecaca;padding-top:8px">
+              <span style="font-weight:700">Total Expenses</span>
+              <span style="font-weight:800;color:#991b1b">₹{{ total_all_exp|floatformat:0 }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Net income bar -->
+      <div style="margin-top:14px;background:#f8f9ff;border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div style="font-size:14px;font-weight:700;color:#1e1b4b">
+          Net Income = Revenue − Expenses
+        </div>
+        <div style="font-size:24px;font-weight:800;color:{% if net_income >= 0 %}#065f46{% else %}#ef4444{% endif %}">
+          {% if net_income >= 0 %}+{% endif %}₹{{ net_income|floatformat:0 }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row g-3 mb-3">
+      <div class="col-12 col-lg-6">
+        <div class="card p-3">
+          <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px">Production — Last 7 Days (MTS)</div>
+          <div style="position:relative;height:180px"><canvas id="prodChart"></canvas></div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-6">
+        <div class="card p-3">
+          <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px">Revenue — Last 7 Days (₹)</div>
+          <div style="position:relative;height:180px"><canvas id="revChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-12 col-lg-5">
+        <div class="card p-3">
+          <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px">Expense Breakdown</div>
+          {% if exp_vals != '[]' %}
+          <div style="position:relative;height:200px;display:flex;align-items:center;justify-content:center">
+            <canvas id="expChart"></canvas>
+          </div>
+          {% else %}
+          <div class="text-center" style="padding:50px 0;color:#9ca3af;font-size:13px">
+            <i class="bi bi-pie-chart" style="font-size:32px;display:block;margin-bottom:8px"></i>No expense data this month
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-12 col-lg-7">
+        <div class="card p-3">
+          <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px">Quick Actions</div>
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'emp_add' %}" class="btn btn-primary btn-sm"><i class="bi bi-person-plus me-1"></i>Add Employee</a>
+            <a href="{% url 'advance_add' %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-cash me-1"></i>Give Advance</a>
+            <a href="{% url 'bill_create' %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-receipt me-1"></i>Create Bill</a>
+            <a href="{% url 'challan_create' %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-truck me-1"></i>Create Challan</a>
+            <a href="{% url 'expense_add' %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-credit-card me-1"></i>Add Expense</a>
+            <a href="{% url 'salary_report' %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-wallet2 me-1"></i>Pay Salary</a>
+            <a href="{% url 'challan_list' %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-truck me-1"></i>Challan Report</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+{% endblock %}
+{% block js %}
+<script>
+const chartDefaults = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.05)' }, ticks: { font: { size: 11 } } },
+    x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+  }
+};
+
+new Chart(document.getElementById('prodChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ p_labels|safe }},
+    datasets: [{ label: 'MTS', data: {{ p_data|safe }},
+      backgroundColor: 'rgba(108,99,255,.7)', borderColor: '#6C63FF',
+      borderWidth: 2, borderRadius: 6 }]
+  },
+  options: chartDefaults
+});
+
+new Chart(document.getElementById('revChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ r_labels|safe }},
+    datasets: [{ label: '₹ Revenue', data: {{ r_data|safe }},
+      backgroundColor: 'rgba(16,185,129,.7)', borderColor: '#10b981',
+      borderWidth: 2, borderRadius: 6 }]
+  },
+  options: { ...chartDefaults, plugins: { legend: { display: false } } }
+});
+
+{% if exp_vals != '[]' %}
+new Chart(document.getElementById('expChart'), {
+  type: 'doughnut',
+  data: {
+    labels: {{ exp_cats|safe }},
+    datasets: [{ data: {{ exp_vals|safe }},
+      backgroundColor: ['#6C63FF','#10b981','#ef4444','#f59e0b','#3b82f6'],
+      borderWidth: 0 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 8, boxWidth: 12 } } }
+  }
+});
+{% endif %}
+</script>
+{% endblock %}

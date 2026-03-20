@@ -1,0 +1,51 @@
+{% extends 'base.html' %}{% block title %}Company Profile{% endblock %}
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main">
+<div class="topbar">
+  <div class="d-flex align-items-center gap-3">
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+    <h5>Company Profile <small style="font-size:12px;color:#6b7280;font-weight:400">(shown on invoice)</small></h5>
+  </div>
+</div>
+<div class="page-body"><div class="row justify-content-center"><div class="col-md-7 col-lg-6">
+<div class="card p-4">
+
+{% if company and company.logo %}
+<div class="mb-3 text-center">
+  <img src="{{ company.logo.url }}" style="max-height:80px;border:1px solid #e5e7eb;border-radius:10px;padding:6px">
+  <div style="font-size:12px;color:#6b7280;margin-top:4px">Current Logo</div>
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">{% csrf_token %}
+<div class="mb-3">
+  <label class="form-label">Company Name *</label>
+  <input class="form-control" name="name" value="{{ company.name|default:'Shree Mahalaxmi Lace' }}" required>
+</div>
+<div class="mb-3">
+  <label class="form-label">Address *</label>
+  <textarea class="form-control" name="address" rows="2" required>{{ company.address|default:'' }}</textarea>
+</div>
+<div class="mb-3">
+  <label class="form-label">GSTIN</label>
+  <input class="form-control" name="gstin" value="{{ company.gstin|default:'' }}" placeholder="24AGQPJ2786A1ZF">
+</div>
+<div class="mb-3">
+  <label class="form-label">Phone</label>
+  <input class="form-control" name="phone" value="{{ company.phone|default:'' }}">
+</div>
+<div class="mb-3">
+  <label class="form-label">Email</label>
+  <input class="form-control" type="email" name="email" value="{{ company.email|default:'' }}">
+</div>
+<div class="mb-3">
+  <label class="form-label">Logo <small style="color:#6b7280">(shown on invoice top-left)</small></label>
+  <input class="form-control" type="file" name="logo" accept="image/*">
+</div>
+<div class="mb-4">
+  <label class="form-label">Terms & Conditions <small style="color:#6b7280">(printed on invoice)</small></label>
+  <textarea class="form-control" name="terms" rows="2">{{ company.terms|default:'Goods once sold will not be taken back.' }}</textarea>
+</div>
+<button type="submit" class="btn btn-primary w-100">Save Company Profile</button>
+</form>
+</div></div></div></div></div></div>{% endblock %}

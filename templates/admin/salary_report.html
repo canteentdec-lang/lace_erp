@@ -1,0 +1,198 @@
+{% extends 'base.html' %}{% block title %}Salary Report{% endblock %}
+{% block head %}
+<style>
+.pay-card{background:#fff;border-radius:14px;padding:20px;box-shadow:0 2px 12px rgba(108,99,255,.1);margin-bottom:12px;border-left:4px solid #e5e7eb}
+.pay-card.paid{border-left-color:#10b981}
+.pay-card.unpaid{border-left-color:#f59e0b}
+.emp-name{font-weight:700;font-size:15px;color:#1e1b4b}
+.sal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.sal-item{background:#f8f9ff;border-radius:8px;padding:10px;text-align:center}
+.sal-item .sv{font-size:16px;font-weight:700;color:#1e1b4b}
+.sal-item .sl{font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.adv-tag{background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.paid-tag{background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.pay-modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center;padding:16px}
+.pay-modal-backdrop.show{display:flex}
+.pay-modal{background:#fff;border-radius:20px;padding:28px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+@media(max-width:480px){.sal-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+{% endblock %}
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main">
+<div class="topbar">
+  <div class="d-flex align-items-center gap-3">
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+    <h5>Salary Report</h5>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'salary_payment_list' %}" class="btn btn-sm btn-outline-primary no-print"><i class="bi bi-clock-history me-1"></i>History</a>
+    <button onclick="window.print()" class="btn btn-sm btn-outline-secondary no-print"><i class="bi bi-printer me-1"></i>Print</button>
+  </div>
+</div>
+<div class="page-body">
+
+  <!-- Month/Year filter -->
+  <div class="card p-3 mb-4 no-print">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-6 col-sm-3">
+        <label class="form-label">Month</label>
+        <select class="form-select" name="month">
+          {% for m in months %}<option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-sm-3">
+        <label class="form-label">Year</label>
+        <input class="form-control" type="number" name="year" value="{{ year }}" min="2020" max="2099">
+      </div>
+      <div class="col-12 col-sm-3">
+        <button type="submit" class="btn btn-primary w-100">View Report</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Salary cards per employee -->
+  {% for r in rows %}
+  <div class="pay-card {% if r.paid %}paid{% else %}unpaid{% endif %}">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+      <div>
+        <div class="emp-name">{{ r.emp.name }}</div>
+        <div style="font-size:12px;color:#6b7280">{{ r.emp.user_id }} &nbsp;|&nbsp; ₹{{ r.emp.salary_per_hour }}/hr</div>
+      </div>
+      {% if r.paid %}
+        <span class="paid-tag"><i class="bi bi-check-circle me-1"></i>Paid ₹{{ r.paid.amount_paid }}</span>
+      {% else %}
+        <button class="btn btn-primary btn-sm" onclick="openPay({{ r.emp.pk }},'{{ r.emp.name }}',{{ r.gross }},{{ r.advance }},{{ r.net }})">
+          <i class="bi bi-cash me-1"></i>Pay Salary
+        </button>
+      {% endif %}
+    </div>
+
+    <div class="sal-grid">
+      <div class="sal-item">
+        <div class="sv">{{ r.hours }}</div>
+        <div class="sl">Hours</div>
+      </div>
+      <div class="sal-item">
+        <div class="sv">₹{{ r.gross|floatformat:0 }}</div>
+        <div class="sl">Gross</div>
+      </div>
+      <div class="sal-item">
+        <div class="sv" style="color:{% if r.advance > 0 %}#ef4444{% else %}#10b981{% endif %}">
+          {% if r.advance > 0 %}-₹{{ r.advance|floatformat:0 }}{% else %}—{% endif %}
+        </div>
+        <div class="sl">Advance</div>
+      </div>
+    </div>
+
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div style="font-size:13px;color:#6b7280">
+        Net Payable: <strong style="font-size:16px;color:{% if r.net >= 0 %}#6C63FF{% else %}#ef4444{% endif %}">
+          ₹{{ r.net|floatformat:2 }}
+        </strong>
+      </div>
+      {% if r.advance > 0 and not r.paid %}
+      <span class="adv-tag"><i class="bi bi-exclamation-circle me-1"></i>Advance will auto-deduct</span>
+      {% endif %}
+      {% if r.paid %}
+      <div style="font-size:12px;color:#6b7280">
+        Paid on {{ r.paid.payment_date|date:"d M Y" }}
+        {% if r.paid.advance_deducted > 0 %} &nbsp;|&nbsp; Advance deducted: ₹{{ r.paid.advance_deducted }}{% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% empty %}
+  <div class="card p-4 text-center text-muted">No active employees found.</div>
+  {% endfor %}
+
+</div></div></div>
+
+<!-- Pay Salary Modal -->
+<div class="pay-modal-backdrop" id="payModal">
+  <div class="pay-modal">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h5 style="font-weight:700;margin:0">Pay Salary</h5>
+      <button onclick="closeModal()" style="background:none;border:none;font-size:22px;color:#6b7280;cursor:pointer">×</button>
+    </div>
+    <div id="modalEmpName" style="font-size:16px;font-weight:700;color:#1e1b4b;margin-bottom:4px"></div>
+    <div id="modalSummary" style="font-size:13px;color:#6b7280;margin-bottom:20px"></div>
+
+    <form method="post" id="payForm">
+      {% csrf_token %}
+      <input type="hidden" name="month" value="{{ month }}">
+      <input type="hidden" name="year" value="{{ year }}">
+
+      <div class="mb-3">
+        <label class="form-label">Payment Date *</label>
+        <input class="form-control" type="date" name="payment_date"
+               value="{% now 'Y-m-d' %}" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Amount to Pay (₹) *
+          <small style="color:#6b7280;font-weight:400">(auto-filled = net payable)</small>
+        </label>
+        <input class="form-control" type="number" step="0.01" name="amount_paid"
+               id="modalAmtPaid" required>
+      </div>
+      <div class="mb-4">
+        <label class="form-label">Note (optional)</label>
+        <textarea class="form-control" name="note" rows="2" placeholder="e.g. Cash payment, Bank transfer..."></textarea>
+      </div>
+
+      <!-- Advance deduction info box -->
+      <div id="advBox" class="mb-4" style="display:none;background:#fef3c7;border-radius:10px;padding:12px 14px;font-size:13px;color:#92400e">
+        <i class="bi bi-info-circle me-2"></i>
+        <span id="advBoxText"></span>
+      </div>
+
+      <div class="d-flex gap-3">
+        <button type="submit" class="btn btn-primary flex-1" style="flex:1;padding:12px">
+          <i class="bi bi-check-lg me-1"></i>Confirm Payment
+        </button>
+        <button type="button" class="btn btn-outline-secondary" onclick="closeModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+{% block js %}
+<script>
+function openPay(empId, empName, gross, advance, net){
+  document.getElementById('payForm').action = '/admin/salary/pay/' + empId + '/';
+  document.getElementById('modalEmpName').textContent = empName;
+  var summary = 'Gross: ₹' + parseFloat(gross).toFixed(2);
+  if(advance > 0) summary += '  |  Advance: -₹' + parseFloat(advance).toFixed(2);
+  summary += '  |  Net: ₹' + parseFloat(net).toFixed(2);
+  document.getElementById('modalSummary').textContent = summary;
+
+  // Set default amount to max(net, 0)
+  var defaultAmt = Math.max(parseFloat(net), 0).toFixed(2);
+  document.getElementById('modalAmtPaid').value = defaultAmt;
+
+  // Show advance info box
+  var advBox = document.getElementById('advBox');
+  if(advance > 0){
+    advBox.style.display = 'block';
+    document.getElementById('advBoxText').textContent =
+      'Pending advance of ₹' + parseFloat(advance).toFixed(2) +
+      ' will be automatically marked as deducted when salary is paid.';
+  } else {
+    advBox.style.display = 'none';
+  }
+
+  document.getElementById('payModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(){
+  document.getElementById('payModal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+// Close on backdrop click
+document.getElementById('payModal').addEventListener('click', function(e){
+  if(e.target === this) closeModal();
+});
+</script>
+{% endblock %}

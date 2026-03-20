@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% block title %}Add Expense{% endblock %}
+{% block body %}<div class="layout">{% include 'admin/sidebar.html' %}
+<div class="main"><div class="topbar"><div class="d-flex align-items-center gap-3"><button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button><h5>Add Expense</h5></div><a href="{% url 'expense_list' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-left me-1"></i>Back</a></div>
+<div class="page-body"><div class="row justify-content-center"><div class="col-md-6 col-lg-4"><div class="card p-4">
+<form method="post">{% csrf_token %}
+<div class="mb-3"><label class="form-label">Category *</label>
+<select class="form-select" name="category" required>
+{% for code,name in cats %}<option value="{{ code }}">{{ name }}</option>{% endfor %}
+</select></div>
+<div class="mb-3"><label class="form-label">Amount (₹) *</label><input class="form-control" type="number" step="0.01" name="amount" required></div>
+<div class="mb-3"><label class="form-label">Date *</label><input class="form-control" type="date" name="date" required></div>
+<div class="mb-4"><label class="form-label">Description</label><textarea class="form-control" name="description" rows="2" placeholder="Optional..."></textarea></div>
+<button type="submit" class="btn btn-primary w-100">Save Expense</button>
+</form></div></div></div></div></div></div>{% endblock %}

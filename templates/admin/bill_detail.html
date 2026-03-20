@@ -1,0 +1,399 @@
+{% extends 'base.html' %}
+{% block title %}Bill #{{ bill.bill_number }}{% endblock %}
+
+{% block head %}
+<style>
+/* ══════════════════════════════════════════════
+   SCREEN STYLES — action bar + card wrapper
+══════════════════════════════════════════════ */
+.action-bar{display:flex;gap:10px;flex-wrap:wrap;padding:14px 20px;background:#fff;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:100}
+.invoice-wrap{max-width:780px;margin:24px auto;padding:0 16px 40px}
+
+/* ══════════════════════════════════════════════
+   INVOICE PAPER STYLES
+══════════════════════════════════════════════ */
+.inv{
+  background:#fff;
+  border:1px solid #d0d0d0;
+  font-family:Arial,sans-serif;
+  font-size:12px;
+  color:#000;
+  padding:0;
+}
+
+/* ── Header ── */
+.inv-head{
+  display:grid;
+  grid-template-columns:90px 1fr;
+  border-bottom:2px solid #1a56a0;
+}
+.inv-logo{
+  padding:10px;
+  display:flex;align-items:center;justify-content:center;
+  border-right:1px solid #d0d0d0;
+}
+.inv-logo img{max-width:72px;max-height:72px;object-fit:contain}
+.inv-logo-placeholder{width:72px;height:72px;display:flex;align-items:center;justify-content:center;font-size:28px;color:#1a56a0}
+.inv-company{padding:8px 14px}
+.inv-company .co-name{
+  font-size:20px;font-weight:700;color:#fff;
+  background:#1a56a0;padding:4px 12px;margin-bottom:4px;
+  display:inline-block;
+}
+.inv-company .co-addr{font-size:11px;color:#333;margin-bottom:2px}
+.inv-company .co-gstin{font-size:11px;font-weight:700;color:#000;margin-bottom:2px}
+.inv-company .co-contact{font-size:11px;color:#333}
+
+/* ── Bill To + Invoice No section ── */
+.inv-meta{
+  display:grid;
+  grid-template-columns:1fr 200px;
+  border-bottom:1px solid #bbb;
+  min-height:100px;
+}
+.inv-billto{padding:10px 14px;border-right:1px solid #bbb}
+.inv-billto .bt-label{
+  font-size:13px;font-weight:700;color:#1a56a0;
+  border-bottom:2px solid #1a56a0;
+  padding-bottom:3px;margin-bottom:6px;
+  font-style:italic;letter-spacing:.5px;
+}
+.inv-billto .bt-name{font-size:13px;font-weight:700;color:#000;margin-bottom:2px}
+.inv-billto .bt-info{font-size:11px;color:#333;line-height:1.5}
+.inv-right{padding:10px 14px;text-align:right}
+.inv-right .original{font-size:11px;color:#555;margin-bottom:6px}
+.inv-right .inv-number{font-size:18px;font-weight:700;color:#1a56a0}
+.inv-right .inv-date{font-size:12px;color:#333;margin-top:4px}
+
+/* ── Items table ── */
+.inv-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.inv-table th{
+  background:#1a56a0;color:#fff;
+  padding:7px 8px;text-align:left;
+  border:1px solid #1a56a0;font-size:11px;
+}
+.inv-table th.num{text-align:center}
+.inv-table td{
+  padding:6px 8px;
+  border:1px solid #ccc;
+  vertical-align:top;
+}
+.inv-table td.num{text-align:center}
+.inv-table td.right{text-align:right}
+.inv-table .item-rows tr:nth-child(even) td{background:#f9f9f9}
+/* Empty space rows to fill page */
+.inv-table .spacer-row td{border-left:1px solid #ccc;border-right:1px solid #ccc;border-top:none;border-bottom:none;height:20px}
+
+/* ── Footer section (totals + words) ── */
+.inv-footer{
+  border-top:2px solid #1a56a0;
+  display:grid;
+  grid-template-columns:1fr 220px;
+}
+.inv-footer-left{padding:10px 14px;border-right:1px solid #bbb;font-size:11px}
+.inv-footer-left .words-label{font-weight:700;font-size:11px;margin-bottom:3px;text-transform:uppercase}
+.inv-footer-left .words-text{color:#333;font-style:italic;margin-bottom:12px}
+.inv-footer-left .terms-label{font-weight:700;font-size:11px;text-transform:uppercase;margin-bottom:3px}
+.inv-footer-left .terms-text{color:#555;font-size:10.5px}
+.inv-footer-right{padding:8px 14px}
+.totals-row{
+  display:flex;justify-content:space-between;
+  padding:3px 0;font-size:11.5px;
+  border-bottom:1px solid #eee;
+}
+.totals-row.grand{
+  border-top:2px solid #000;border-bottom:2px solid #000;
+  font-weight:700;font-size:13px;margin-top:4px;padding:5px 0;
+}
+.totals-row .tl{color:#333}
+.totals-row.grand .tl{color:#000}
+.totals-row.grand .tv{color:#000}
+
+/* ── Signature section ── */
+.inv-sign{
+  border-top:1px solid #bbb;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  padding:10px 14px;
+  font-size:11px;
+}
+.inv-sign .sign-right{text-align:right}
+.inv-sign .sign-right .for-name{font-weight:700;font-size:12px;margin-bottom:30px}
+.inv-sign .sign-right .auth{font-weight:700;border-top:1px solid #000;padding-top:4px;margin-top:4px}
+
+/* ══════════════════════════════════════════════
+   PRINT — hide everything except invoice
+══════════════════════════════════════════════ */
+@media print{
+  .sidebar,.topbar,.action-bar,.sidebar-overlay,.menu-toggle,
+  .no-print,.invoice-wrap > *:not(.inv){display:none!important}
+  .main{margin-left:0!important}
+  .invoice-wrap{margin:0!important;padding:0!important;max-width:100%!important}
+  .inv{border:none!important;box-shadow:none!important}
+  body{background:#fff!important}
+  @page{margin:10mm;size:A4}
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="layout">
+{% include 'admin/sidebar.html' %}
+<div class="main">
+
+  <!-- Action bar (hidden on print) -->
+  <div class="action-bar no-print">
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
+    <a href="{% url 'bill_list' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+    <a href="{% url 'bill_edit' bill.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Edit</a>
+    <button onclick="window.print()" class="btn btn-sm btn-primary"><i class="bi bi-printer me-1"></i>Print Invoice</button>
+    <button onclick="shareInvoice()" class="btn btn-sm btn-outline-primary"><i class="bi bi-share me-1"></i>Share</button>
+    {% if bill.challan and bill.challan.pk %}
+    <a href="{% url 'challan_detail' bill.challan.pk %}" class="btn btn-sm btn-outline-success"><i class="bi bi-truck me-1"></i>Challan</a>
+    {% endif %}
+  </div>
+
+  <div class="invoice-wrap">
+  <!-- ═══════════════════ INVOICE ═══════════════════ -->
+  <div class="inv" id="invoice">
+
+    <!-- HEADER: Logo + Company -->
+    <div class="inv-head">
+      <div class="inv-logo">
+        {% if company and company.logo %}
+          <img src="{{ company.logo.url }}" alt="logo">
+        {% else %}
+          <div class="inv-logo-placeholder">🕉</div>
+        {% endif %}
+      </div>
+      <div class="inv-company">
+        <div class="co-name">{% if company %}{{ company.name }}{% else %}Your Company Name{% endif %}</div>
+        <div class="co-addr">{% if company %}{{ company.address }}{% else %}Your Address{% endif %}</div>
+        <div class="co-gstin">GSTIN.: {% if company %}{{ company.gstin }}{% else %}—{% endif %}</div>
+        <div class="co-contact">
+          M.: {% if company %}{{ company.phone }}{% else %}—{% endif %}
+          &nbsp;&nbsp;&nbsp;
+          E.: {% if company %}{{ company.email }}{% else %}—{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- BILL TO + INVOICE NUMBER -->
+    <div class="inv-meta">
+      <div class="inv-billto">
+        <div class="bt-label">BILL TO</div>
+        {% if bill.party %}
+        <div class="bt-name">{{ bill.party.name }}</div>
+        <div class="bt-info">
+          {% if bill.party.phone %}M.: {{ bill.party.phone }}<br>{% endif %}
+          {% if bill.party.gst_number %}GSTIN.: {{ bill.party.gst_number }}<br>{% endif %}
+          {% if bill.party.address %}Add.: {{ bill.party.address }}{% endif %}
+        </div>
+        {% endif %}
+      </div>
+      <div class="inv-right">
+        <div class="original">Original for Recipient</div>
+        <div class="inv-number">INVOICE {{ bill.bill_number }}</div>
+        <div class="inv-date">Date: {{ bill.date|date:"d-M-Y" }}</div>
+      </div>
+    </div>
+
+    <!-- ITEMS TABLE -->
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th class="num" style="width:26px">#</th>
+          <th>Product/Service Name</th>
+          <th style="width:52px">HSN</th>
+          <th style="width:48px">Qty</th>
+          <th style="width:40px">Unit</th>
+          <th style="width:56px">Price</th>
+          {% if bill.apply_gst %}<th style="width:70px">GST</th>{% endif %}
+          <th style="width:76px">Amount</th>
+        </tr>
+      </thead>
+      <tbody class="item-rows">
+        {% for item in bill.items.all %}
+        <tr>
+          <td class="num">{{ forloop.counter }}</td>
+          <td>{{ item.product.design_name }}</td>
+          <td>{{ item.hsn_code|default:item.product.hsn_code }}</td>
+          <td class="right">{{ item.quantity }}</td>
+          <td class="num">{{ item.unit|default:"PCS" }}</td>
+          <td class="right">₹ {{ item.price }}</td>
+          {% if bill.apply_gst %}
+          <td class="right">
+            ₹ {{ item.gst_amount }}<br>
+            <span style="font-size:10px;color:#555">({{ item.gst_percent }}%)</span>
+          </td>
+          {% endif %}
+          <td class="right">₹ {{ item.total }}</td>
+        </tr>
+        {% endfor %}
+        <!-- Spacer rows to fill space (like original invoice) -->
+        {% with items_count=bill.items.count %}
+        {% if items_count < 8 %}
+        {% for i in "12345678"|make_list %}
+        {% if forloop.counter > items_count %}
+        <tr class="spacer-row">
+          <td></td><td></td><td></td><td></td><td></td><td></td>
+          {% if bill.apply_gst %}<td></td>{% endif %}
+          <td></td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+      </tbody>
+      <!-- TOTAL ROW -->
+      <tfoot>
+        <tr style="background:#e8edf5">
+          <td colspan="{% if bill.apply_gst %}3{% else %}2{% endif %}" class="right" style="font-weight:700;font-size:12px">TOTAL</td>
+          <td class="right" style="font-weight:700">
+            {{ bill.items.all|length }}
+          </td>
+          <td></td>
+          <td></td>
+          {% if bill.apply_gst %}
+          <td class="right" style="font-weight:700">₹ {{ bill.gst_amount }}</td>
+          {% endif %}
+          <td class="right" style="font-weight:700">₹ {{ bill.total_amount }}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <!-- FOOTER: Words + Terms + Totals -->
+    <div class="inv-footer">
+      <div class="inv-footer-left">
+        <div class="words-label">Invoice Amount in Word</div>
+        <div class="words-text">{{ amount_words }}</div>
+        <div class="terms-label">Terms and Conditions</div>
+        <div class="terms-text">{% if company %}{{ company.terms }}{% else %}Goods once sold will not be taken back.{% endif %}</div>
+      </div>
+      <div class="inv-footer-right">
+        <div class="totals-row">
+          <span class="tl">Sub Total</span>
+          <span class="tv">₹ {{ bill.subtotal }}</span>
+        </div>
+        <div class="totals-row">
+          <span class="tl">Discount</span>
+          <span class="tv">₹ {{ bill.discount|default:"0.00" }}</span>
+        </div>
+        {% if bill.apply_gst %}
+          {% if bill.is_igst %}
+          <div class="totals-row">
+            <span class="tl">SGST Amount</span>
+            <span class="tv">₹ 0.00</span>
+          </div>
+          <div class="totals-row">
+            <span class="tl">CGST Amount</span>
+            <span class="tv">₹ 0.00</span>
+          </div>
+          <div class="totals-row">
+            <span class="tl">IGST Amount</span>
+            <span class="tv">₹ {{ bill.gst_amount }}</span>
+          </div>
+          {% else %}
+          <div class="totals-row">
+            <span class="tl">SGST Amount</span>
+            <span class="tv">₹ {{ bill.sgst_amount|default:"0.00" }}</span>
+          </div>
+          <div class="totals-row">
+            <span class="tl">CGST Amount</span>
+            <span class="tv">₹ {{ bill.cgst_amount|default:"0.00" }}</span>
+          </div>
+          <div class="totals-row">
+            <span class="tl">IGST Amount</span>
+            <span class="tv">₹ 0.00</span>
+          </div>
+          {% endif %}
+        {% else %}
+        <div class="totals-row"><span class="tl">SGST Amount</span><span class="tv">₹ 0.00</span></div>
+        <div class="totals-row"><span class="tl">CGST Amount</span><span class="tv">₹ 0.00</span></div>
+        <div class="totals-row"><span class="tl">IGST Amount</span><span class="tv">₹ 0.00</span></div>
+        {% endif %}
+        <div class="totals-row grand">
+          <span class="tl">Total</span>
+          <span class="tv">₹ {{ bill.total_amount }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGNATURE -->
+    <div class="inv-sign">
+      <div></div>
+      <div class="sign-right">
+        <div class="for-name">For, {% if company %}{{ company.name }}{% endif %}</div>
+        <div class="auth">Authorized Signatory</div>
+      </div>
+    </div>
+
+  </div><!-- end .inv -->
+  </div><!-- end .invoice-wrap -->
+
+</div><!-- end .main -->
+</div><!-- end .layout -->
+{% endblock %}
+
+{% block js %}
+<script>
+function shareInvoice(){
+  var text = "Invoice #{{ bill.bill_number }}\n";
+  text += "Party: {{ bill.party.name }}\n";
+  text += "Date: {{ bill.date|date:'d M Y' }}\n";
+  text += "Total: ₹{{ bill.total_amount }}\n\n";
+  text += "Items:\n";
+  {% for item in bill.items.all %}
+  text += "• {{ item.product.design_name }} – Qty: {{ item.quantity }} × ₹{{ item.price }} = ₹{{ item.total }}\n";
+  {% endfor %}
+  text += "\nAmount in words: {{ amount_words }}";
+  if(navigator.share){
+    navigator.share({title:'Invoice #{{ bill.bill_number }}', text:text}).catch(function(){});
+  } else {
+    navigator.clipboard.writeText(text)
+      .then(function(){ alert('Invoice details copied!'); })
+      .catch(function(){ var w=window.open('','_blank'); w.document.write('<pre>'+text+'</pre>'); });
+  }
+}
+
+function printPDF(){
+  // Opens browser print dialog — choose 'Save as PDF' to get PDF
+  // Or click Print to send to printer
+  var ua = navigator.userAgent;
+  var isChrome = ua.indexOf('Chrome') > -1;
+  if(isChrome){
+    // Show tip first time
+    var shown = sessionStorage.getItem('pdfTipShown');
+    if(!shown){
+      sessionStorage.setItem('pdfTipShown','1');
+      setTimeout(function(){ window.print(); }, 100);
+      return;
+    }
+  }
+  window.print();
+}
+</script>
+
+<!-- PDF tip toast (shown once) -->
+<div id="pdfTip" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e1b4b;color:#fff;border-radius:12px;padding:14px 20px;font-size:13px;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:340px;text-align:center">
+  <i class="bi bi-info-circle me-2"></i>
+  In the print dialog, set <strong>Destination → Save as PDF</strong> to download as PDF file.
+  <div style="margin-top:8px"><button onclick="this.closest('#pdfTip').style.display='none';window.print()" style="background:#6C63FF;border:none;color:#fff;padding:6px 16px;border-radius:8px;cursor:pointer;font-size:12px">OK, Got it →</button></div>
+</div>
+<script>
+// Show PDF tip
+if(!sessionStorage.getItem('pdfTipShown2')){
+  sessionStorage.setItem('pdfTipShown2','1');
+  // Override printPDF to show tip first
+  var origPrint = printPDF;
+  window.printPDF = function(){
+    document.getElementById('pdfTip').style.display='block';
+    // Auto-hide after 5s and print
+    setTimeout(function(){
+      document.getElementById('pdfTip').style.display='none';
+    },6000);
+  };
+}
+</script>
+{% endblock %}

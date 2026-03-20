@@ -1,0 +1,39 @@
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<aside class="sidebar" id="adminSidebar">
+  <div class="brand">
+    <i class="bi bi-gem" style="font-size:22px;flex-shrink:0"></i>
+    <div style="flex:1;min-width:0"><div>Lace ERP</div><small>Admin Panel</small></div>
+    <button class="close-btn" onclick="toggleSidebar()" title="Close"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <nav>
+    <div class="sec">Overview</div>
+    <a href="{% url 'adm_dashboard' %}" {% if request.resolver_match.url_name == 'adm_dashboard' %}class="active"{% endif %}><i class="bi bi-speedometer2"></i>Dashboard</a>
+
+    <div class="sec">HR</div>
+    <a href="{% url 'emp_list' %}" {% if request.resolver_match.url_name in 'emp_list,emp_add,emp_edit,emp_delete' %}class="active"{% endif %}><i class="bi bi-people"></i>Employees</a>
+    <a href="{% url 'advance_list' %}" {% if 'advance' in request.resolver_match.url_name %}class="active"{% endif %}><i class="bi bi-cash-stack"></i>Advance (उपाड)</a>
+    <a href="{% url 'salary_report' %}" {% if request.resolver_match.url_name in 'salary_report,salary_pay' %}class="active"{% endif %}><i class="bi bi-wallet2"></i>Salary & Pay</a>
+    <a href="{% url 'salary_payment_list' %}" {% if request.resolver_match.url_name == 'salary_payment_list' %}class="active"{% endif %}><i class="bi bi-clock-history"></i>Payment History</a>
+    <a href="{% url 'attendance_report' %}" {% if request.resolver_match.url_name == 'attendance_report' %}class="active"{% endif %}><i class="bi bi-calendar-check"></i>Attendance</a>
+
+    <div class="sec">Production</div>
+    <a href="{% url 'machine_list' %}" {% if 'machine' in request.resolver_match.url_name %}class="active"{% endif %}><i class="bi bi-cpu"></i>Machines</a>
+    <a href="{% url 'design_list' %}" {% if 'design' in request.resolver_match.url_name %}class="active"{% endif %}><i class="bi bi-diagram-3"></i>Designs</a>
+    <a href="{% url 'production_report' %}" {% if request.resolver_match.url_name == 'production_report' %}class="active"{% endif %}><i class="bi bi-bar-chart"></i>Production</a>
+
+    <div class="sec">Billing</div>
+    <a href="{% url 'party_list' %}" {% if 'party' in request.resolver_match.url_name %}class="active"{% endif %}><i class="bi bi-building"></i>Parties</a>
+    <a href="{% url 'product_list' %}" {% if 'product' in request.resolver_match.url_name %}class="active"{% endif %}><i class="bi bi-box"></i>Products</a>
+    <a href="{% url 'bill_list' %}" {% if 'bill' in request.resolver_match.url_name %}class="active"{% endif %}><i class="bi bi-receipt"></i>Bills</a>
+    <a href="{% url 'challan_list' %}" {% if 'challan' in request.resolver_match.url_name %}class="active"{% endif %}><i class="bi bi-truck"></i>Challans</a>
+
+    <div class="sec">Finance</div>
+    <a href="{% url 'expense_list' %}" {% if 'expense' in request.resolver_match.url_name %}class="active"{% endif %}><i class="bi bi-credit-card"></i>Expenses</a>
+    <a href="{% url 'inventory' %}" {% if request.resolver_match.url_name == 'inventory' %}class="active"{% endif %}><i class="bi bi-boxes"></i>Inventory</a>
+    <div class="sec">Settings</div>
+    <a href="{% url 'company_profile' %}" {% if request.resolver_match.url_name == 'company_profile' %}class="active"{% endif %}><i class="bi bi-building-gear"></i>Company Profile</a>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="{% url 'adm_logout' %}" style="color:rgba(255,255,255,.78);text-decoration:none;font-size:13px;display:flex;align-items:center;gap:8px"><i class="bi bi-box-arrow-right"></i>Logout</a>
+  </div>
+</aside>
